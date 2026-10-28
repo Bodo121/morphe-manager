@@ -71,6 +71,7 @@ import app.morphe.manager.ui.screen.shared.MainPage
 import app.morphe.manager.ui.screen.shared.MessageHost
 import app.morphe.manager.ui.screen.shared.RandomBackground
 import app.morphe.manager.ui.screen.shared.UserMessages
+import app.morphe.manager.ui.screen.shared.LocalReducedMotion
 import app.morphe.manager.ui.screen.shared.rememberReducedMotion
 import app.morphe.manager.ui.screen.shared.rememberRandomBackground
 import app.morphe.manager.ui.screen.shared.sharedAxisZEnter
@@ -592,7 +593,8 @@ private fun MorpheManager(vm: MainViewModel) {
         scope.launch { prefs.firstLaunch.update(false) }
     }
 
-    // Box with background at the highest level
+    // Share one motion observer with all screens and list items.
+    CompositionLocalProvider(LocalReducedMotion provides reduceMotion) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -734,6 +736,7 @@ private fun MorpheManager(vm: MainViewModel) {
                 OnboardingShowcase(steps = onboardingSteps, onComplete = finishOnboardingTour)
             }
         }
+    }
     }
 }
 

@@ -47,9 +47,12 @@ fun rememberAccessibilityEnabled(): Boolean {
     return enabled
 }
 
+val LocalReducedMotion = androidx.compose.runtime.staticCompositionLocalOf<Boolean?> { null }
+
 /** App preference plus Android's animator scale; updates when either changes. */
 @Composable
 fun rememberReducedMotion(): Boolean {
+    LocalReducedMotion.current?.let { return it }
     val context = LocalContext.current
     val prefs: app.morphe.manager.domain.manager.PreferencesManager = org.koin.compose.koinInject()
     val requested by prefs.sakuraReduceMotion.getAsState()

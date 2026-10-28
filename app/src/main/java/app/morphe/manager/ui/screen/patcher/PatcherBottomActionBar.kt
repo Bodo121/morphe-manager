@@ -37,7 +37,7 @@ import app.morphe.manager.ui.screen.shared.Defaults
 import app.morphe.manager.ui.screen.shared.GlassButtonDefaults
 import app.morphe.manager.ui.screen.shared.autoMirrored
 import app.morphe.manager.ui.screen.shared.labelsFitSlots
-import app.morphe.manager.ui.screen.shared.rememberAccessibilityEnabled
+import app.morphe.manager.ui.screen.shared.rememberReducedMotion
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.rounded.*
 import com.composables.icons.materialsymbols.roundedfilled.*
@@ -81,7 +81,7 @@ fun PatcherBottomActionBar(
     // Tracks the brief "Copied!" feedback state on the copy button
     val copied = remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    val reduceMotion = rememberAccessibilityEnabled()
+    val reduceMotion = rememberReducedMotion()
 
     // Buttons present when the bar itself appears are drawn in place; only later arrivals fade
     val settled = remember { mutableStateOf(false) }

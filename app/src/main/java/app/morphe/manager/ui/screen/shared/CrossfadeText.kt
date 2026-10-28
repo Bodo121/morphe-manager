@@ -54,7 +54,7 @@ fun CrossfadeText(
         }
     }
 
-    if (rememberAccessibilityEnabled()) {
+    if (rememberReducedMotion()) {
         content(text, modifier)
     } else {
         AnimatedContent(

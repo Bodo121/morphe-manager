@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.morphe.manager.R
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun SakuraPatcherLanding(
     sourceCount: Int,
@@ -97,7 +98,7 @@ fun SakuraPatcherLanding(
                 OutlinedButton(onClick = onOpenPatchLab, modifier = Modifier.fillMaxWidth()) {
                     Text("Open Sakura PatchLab")
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     TextButton(onClick = onOpenSources) { Text("Patch sources") }
                     TextButton(onClick = onOpenWorkspace) { Text("Build workspace") }
                     TextButton(onClick = onOpenSelections) { Text("Saved selections") }
