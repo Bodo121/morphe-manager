@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -152,6 +153,7 @@ fun SakuraPatchLabScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var filter by remember { mutableStateOf("All") }
     var search by remember { mutableStateOf("") }
+    var labTab by rememberSaveable { mutableStateOf("Overview") }
 
     fun scan(uri: Uri, comparisonSlot: Boolean) {
         scope.launch {
@@ -225,8 +227,41 @@ fun SakuraPatchLabScreen(
             apk.permissions.forEach { appendLine(" - " + it) }
             appendLine("Metadata compatibility checks: " + checks.size)
             checks.forEach { appendLine(" - " + it.source + " / " + it.title + " / " + it.status) }
+            comparison?.let { other ->
+                val addedPaths = other.entryIndex.keys - apk.entryIndex.keys
+                val removedPaths = apk.entryIndex.keys - other.entryIndex.keys
+                val changedPaths = apk.entryIndex.keys.intersect(other.entryIndex.keys)
+                    .count { apk.entryIndex[it] != other.entryIndex[it] }
+                appendLine("Comparison APK: " + other.fileName)
+                appendLine("Comparison SHA-256: " + other.sha256)
+                appendLine("Added ZIP paths: " + addedPaths.size)
+                appendLine("Removed ZIP paths: " + removedPaths.size)
+                appendLine("Changed ZIP entries (CRC or size): " + changedPaths)
+                appendLine("Added permissions:")
+                (other.permissions.toSet() - apk.permissions.toSet()).forEach { appendLine(" + " + it) }
+                appendLine("Removed permissions:")
+                (apk.permissions.toSet() - other.permissions.toSet()).forEach { appendLine(" - " + it) }
+            }
         }
         appendLine("Note: Metadata compatibility is not bytecode fingerprint verification.")
+    }
+
+    val reportExportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/plain")
+    ) { uri ->
+        uri?.let { destination ->
+            scope.launch {
+                try {
+                    withContext(Dispatchers.IO) {
+                        context.contentResolver.openOutputStream(destination)?.bufferedWriter()?.use {
+                            it.write(report)
+                        } ?: throw IOException("Cannot write the selected report file")
+                    }
+                } catch (e: Exception) {
+                    error = "Report export failed: " + (e.message ?: "Unknown error")
+                }
+            }
+        }
     }
 
     Column(
@@ -246,13 +281,38 @@ fun SakuraPatchLabScreen(
             Button(onClick = { primaryPicker.launch(arrayOf("*/*")) }, enabled = !loading) {
                 Text(if (primary == null) "Choose APK" else "Replace APK")
             }
-            if (primary != null) OutlinedButton(
+            if (primary != null && labTab == "Diff") OutlinedButton(
                 onClick = { comparePicker.launch(arrayOf("*/*")) }, enabled = !loading
             ) { Text("Compare APK") }
         }
         if (loading) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
 
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            listOf("Overview", "Patches", "Diff", "Report").forEach { title ->
+                FilterChip(
+                    selected = labTab == title,
+                    onClick = { labTab = title },
+                    label = { Text(title) }
+                )
+            }
+        }
+
+        if (primary == null) {
+            Card {
+                Text(
+                    "Choose a local standalone APK to inspect its package metadata, " +
+                        "patch compatibility, archive changes and SHA-256 fingerprint.",
+                    modifier = Modifier.padding(16.dp),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+
+        if (labTab == "Patches") {
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Cross-package patch metadata", style = MaterialTheme.typography.titleMedium)
@@ -273,7 +333,9 @@ fun SakuraPatchLabScreen(
             }
         }
 
+        }
         primary?.let { apk ->
+            if (labTab == "Overview") {
             Card {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(apk.fileName, style = MaterialTheme.typography.titleMedium)
@@ -308,6 +370,8 @@ fun SakuraPatchLabScreen(
                 }
             }
 
+            }
+            if (labTab == "Patches") {
             if (checks.isNotEmpty()) {
                 OutlinedTextField(
                     value = search, onValueChange = { search = it },
@@ -342,6 +406,17 @@ fun SakuraPatchLabScreen(
                 Text("No loaded patch metadata yet. Add or update patch sources in the Sources tab.")
             }
 
+            }
+            if (labTab == "Diff") {
+            if (comparison == null) {
+                Card {
+                    Text(
+                        "Select Compare APK above to inspect ZIP entry changes and " +
+                            "new or removed Android permissions. This isn't a DEX semantic diff.",
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            }
             if (comparison != null) {
                 val other = comparison!!
                 val addedPermissions = other.permissions.toSet() - apk.permissions.toSet()
@@ -376,10 +451,30 @@ fun SakuraPatchLabScreen(
                 }
             }
 
-            OutlinedButton(onClick = {
-                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                clipboard.setPrimaryClip(ClipData.newPlainText("Sakura PatchLab report", report))
-            }) { Text("Copy diagnostic report") }
+            }
+            if (labTab == "Report") {
+                Card {
+                    Column(
+                        Modifier.fillMaxWidth().padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text("Local diagnostic report", style = MaterialTheme.typography.titleMedium)
+                        Text(report, style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            "These checks do not prove bytecode fingerprint compatibility.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
+                }
+                OutlinedButton(onClick = {
+                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    clipboard.setPrimaryClip(ClipData.newPlainText("Sakura PatchLab report", report))
+                }) { Text("Copy diagnostic report") }
+                OutlinedButton(onClick = {
+                    reportExportLauncher.launch("sakura-patchlab-report.txt")
+                }) { Text("Export report (.txt)") }
+            }
         }
     }
 }

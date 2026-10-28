@@ -87,3 +87,15 @@ Use screenshot references from the supplied prototype to compare at identical vi
 7. Run full UI parity, functional, accessibility, performance, stability and release-gate validation before calling the major version complete.
 
 **Scope commitment:** All items above are requested for the *next version*, but each must be honestly labeled implemented/tested/experimental rather than assumed working. We should not sacrifice the existing APK patch functionality to reach visual parity.
+
+## Work completed in the current follow-up
+
+The following are source-code changes, **not yet an end-to-end validated release**:
+
+- [x] Sakura PatchLab gets real **Overview / Patches / Diff / Report** tabs.
+- [x] PatchLab supports exporting a local text diagnostic report (Android document picker) with APK SHA-256, metadata compatibility, permissions and ZIP archive difference counts.
+- [x] Normal `main` pushes compile the APK directly without the slow/hanging `:app:testDebugUnitTest` task, and upload a Gradle profiling report.
+- [x] Documentation-only changes no longer start an automatic APK build.
+- [x] Unit tests remain available only through **Actions → SakuraPatcher manual unit-test diagnostics → Run workflow**, with test progress reporting and an enforced timeout.
+
+**Not implemented by this follow-up:** bytecode fingerprint matching/automatic porting, dedicated named patch profiles, true decoded DEX/resource diffs, automated retry conflict isolation, rollback, full Eco/Balanced/Maximum patch engine modes, pixel-by-pixel reference screenshot verification. These remain roadmap scope and are not to be represented as finished functionality.

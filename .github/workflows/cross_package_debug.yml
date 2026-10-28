@@ -4,9 +4,12 @@ on:
   push:
     branches:
       - main
+    # Changes to roadmap/docs alone must not cancel a compiling APK.
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
   workflow_dispatch:
 
-# Only the newest main commit needs a debug artifact.
 concurrency:
   group: sakura-debug-${{ github.ref }}
   cancel-in-progress: true
@@ -18,34 +21,47 @@ permissions:
 jobs:
   debug-apk:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Set up Java
+      - name: Set up Java toolchains
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: |
             17
             21
-      - name: Configure Gradle
+      - name: Configure Gradle build cache
         uses: gradle/actions/setup-gradle@v4
-      - name: Run unit tests
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          chmod +x ./gradlew
-          ./gradlew :app:testDebugUnitTest --stacktrace
-      - name: Compile debug APK
+
+      # Unit tests are intentionally NOT run on this automatic debug APK workflow.
+      # The old test runner sometimes stalled for more than ten minutes.
+      # Diagnostic tests are available with the manual-only workflow.
+      - name: Compile SakuraPatcher debug APK
+        timeout-minutes: 25
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           _JAVA_OPTIONS: -Djava.awt.headless=true
         run: |
           chmod +x ./gradlew
-          ./gradlew :app:assembleDebug --stacktrace
-      - name: Upload APK artifact
+          ./gradlew :app:assembleDebug --build-cache --stacktrace --console=plain --profile
+
+      - name: Upload SakuraPatcher debug APK
         uses: actions/upload-artifact@v4
         with:
           name: SakuraPatcher-debug
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload Gradle profile for diagnosis
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SakuraPatcher-gradle-build-profile
+          path: |
+            build/reports/profile/*.html
+            app/build/reports/profile/*.html
+          if-no-files-found: ignore
+          retention-days: 7

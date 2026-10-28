@@ -424,7 +424,13 @@ tasks {
     // CI logs are all anyone reads of a failed run, so a failure prints its whole message there
     withType<Test>().configureEach {
         testLogging {
-            events(TestLogEvent.FAILED)
+            // Manual CI diagnostics reveal exactly which test begins and never finishes.
+            events(
+                TestLogEvent.STARTED,
+                TestLogEvent.PASSED,
+                TestLogEvent.FAILED,
+                TestLogEvent.SKIPPED
+            )
             exceptionFormat = TestExceptionFormat.FULL
         }
     }
