@@ -87,7 +87,7 @@ fun PatcherScreen(
                 Column {
                     androidx.compose.material3.TextButton(enabled = patcherViewModel.storageReady, onClick = { patcherViewModel.startReviewedBuild(true) }) { androidx.compose.material3.Text(stringResource(R.string.sakura_dry_run)) }
                     androidx.compose.material3.TextButton(onClick = { if (patcherViewModel.storageReady) onChangePatches() else patcherViewModel.recheckReady() }) { androidx.compose.material3.Text(stringResource(if (patcherViewModel.storageReady) R.string.sakura_review_patches else R.string.sakura_recheck_storage)) }
-                    androidx.compose.material3.TextButton(onClick = onBackClick) { androidx.compose.material3.Text(stringResource(R.string.cancel)) }
+                    androidx.compose.material3.TextButton(onClick = onBackClick) { androidx.compose.material3.Text(stringResource(R.string.sakura_ui_cancel)) }
                 }
             }
         )

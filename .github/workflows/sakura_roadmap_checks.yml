@@ -3,6 +3,9 @@ on:
   push:
     branches: [sakura-roadmap-release]
   workflow_dispatch:
+concurrency:
+  group: sakura-roadmap-checks-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
   packages: read
