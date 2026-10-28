@@ -1,0 +1,34 @@
+name: One-time branch cleanup after verified SakuraPatcher build
+
+on:
+  workflow_run:
+    workflows:
+      - Build SakuraPatcher debug APK
+    types:
+      - completed
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete legacy branches, preserve main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -eu
+          for branch in 'crowdin' 'dev' 'doom-on-morphe' 'feat/official-signing-key' 'feature/cross-package-patches'; do
+            echo "Deleting refs/heads/$branch if permitted"
+            if gh api --method DELETE "repos/$GH_REPO/git/refs/heads/$branch"; then
+              echo "Deleted $branch"
+            else
+              echo "Failed or branch absent: $branch" >&2
+            fi
+          done

@@ -7,12 +7,12 @@ on:
         description: 'Send FCM push notification'
         type: boolean
         default: false
-  push:
-    branches:
-      - main
 
 jobs:
   release:
+    # Upstream release workflow requires Morphe-owned secrets and deployment credentials.
+    # Disabled in the independent SakuraPatcher fork to prevent accidental upstream publishing.
+    if: false
     name: Release
     permissions:
       contents: write
