@@ -77,12 +77,9 @@ class Runtime(
         onMergedApkReady: (suspend (File) -> Unit)? = null
     ): Duration {
         val mergedApk = fs.tempDir.resolve("merged-${System.currentTimeMillis()}.apk")
-        val target = prefs.crossPackageTarget.get().trim()
-        val source = prefs.crossPackageSource.get().trim()
-        val compatibilityPackage = source.takeIf { packageName == target && it.isNotEmpty() } ?: packageName
         val request = PatchRequest(
             packageName = packageName,
-            compatibilityPackage = compatibilityPackage,
+            allowCrossPackagePatches = prefs.allowCrossPackagePatches.get(),
             inputFile = inputFile,
             outputFile = outputFile,
             mergedApkFile = mergedApk.absolutePath,
