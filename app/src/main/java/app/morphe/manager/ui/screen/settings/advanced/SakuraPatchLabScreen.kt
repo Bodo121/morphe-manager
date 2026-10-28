@@ -33,8 +33,18 @@ import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
 import java.io.File
 import java.io.IOException
+import java.io.DataInputStream
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.security.MessageDigest
 import java.util.zip.ZipFile
+
+private data class SakuraDexHeader(
+    val name: String,
+    val methodIds: Int,
+    val classDefs: Int,
+    val stringIds: Int
+)
 
 private data class SakuraApkScan(
     val fileName: String,
@@ -42,10 +52,12 @@ private data class SakuraApkScan(
     val version: String?,
     val versionCode: Long,
     val bytes: Long,
+    val scanDurationMs: Long,
     val sha256: String,
     val entriesCount: Int,
     val entryIndex: Map<String, Pair<Long, Long>>,
     val dexCount: Int,
+    val dexHeaders: List<SakuraDexHeader>,
     val nativeLibraryCount: Int,
     val permissions: List<String>,
     val hasManifest: Boolean,
@@ -68,6 +80,7 @@ private fun inspectSakuraApk(context: Context, uri: Uri): SakuraApkScan {
         if (cursor.moveToFirst()) cursor.getString(0) else null
     } ?: "Selected APK"
 
+    val scanStartNs = System.nanoTime()
     val tmp = File.createTempFile("sakura-lab-", ".apk", context.cacheDir)
     try {
         var bytes = 0L
@@ -96,6 +109,7 @@ private fun inspectSakuraApk(context: Context, uri: Uri): SakuraApkScan {
 
         var count = 0
         var dex = 0
+        val dexHeaders = mutableListOf<SakuraDexHeader>()
         var libs = 0
         var hasManifest = false
         var hasResources = false
@@ -106,7 +120,32 @@ private fun inspectSakuraApk(context: Context, uri: Uri): SakuraApkScan {
                 val entry = entries.nextElement()
                 count++
                 if (files.size < 20000) files[entry.name] = entry.crc to entry.size
-                if (entry.name.matches(Regex("classes(\\d*)\\.dex"))) dex++
+                if (entry.name.matches(Regex("classes(\\d*)\\.dex"))) {
+                    dex++
+                    // Only read the 112-byte DEX header; never inflate a full DEX just
+                    // to display its class/method ID counts.
+                    if (dexHeaders.size < 30) {
+                        val header = ByteArray(112)
+                        val valid = runCatching {
+                            zip.getInputStream(entry).use { input ->
+                                DataInputStream(input).readFully(header)
+                            }
+                            header[0] == 'd'.code.toByte() &&
+                                header[1] == 'e'.code.toByte() &&
+                                header[2] == 'x'.code.toByte() &&
+                                header[3] == '\n'.code.toByte()
+                        }.getOrDefault(false)
+                        if (valid) {
+                            val buffer = ByteBuffer.wrap(header).order(ByteOrder.LITTLE_ENDIAN)
+                            val methods = buffer.getInt(88)
+                            val classes = buffer.getInt(96)
+                            val strings = buffer.getInt(56)
+                            if (methods >= 0 && classes >= 0 && strings >= 0) {
+                                dexHeaders.add(SakuraDexHeader(entry.name, methods, classes, strings))
+                            }
+                        }
+                    }
+                }
                 if (entry.name.startsWith("lib/") && entry.name.endsWith(".so")) libs++
                 if (entry.name == "AndroidManifest.xml") hasManifest = true
                 if (entry.name == "resources.arsc") hasResources = true
@@ -123,10 +162,12 @@ private fun inspectSakuraApk(context: Context, uri: Uri): SakuraApkScan {
                 packageInfo.versionCode.toLong()
             },
             bytes = bytes,
+            scanDurationMs = (System.nanoTime() - scanStartNs) / 1000000L,
             sha256 = digest.digest().joinToString("") { "%02x".format(it) },
             entriesCount = count,
             entryIndex = files,
             dexCount = dex,
+            dexHeaders = dexHeaders,
             nativeLibraryCount = libs,
             permissions = packageInfo.requestedPermissions?.toList().orEmpty().sorted(),
             hasManifest = hasManifest,
@@ -219,8 +260,15 @@ fun SakuraPatchLabScreen(
             appendLine("Package: " + apk.packageName)
             appendLine("Version: " + (apk.version ?: "unknown") + " (" + apk.versionCode + ")")
             appendLine("Size: " + apk.bytes + " bytes")
+            appendLine("Scan duration: " + apk.scanDurationMs + " ms")
             appendLine("SHA-256: " + apk.sha256)
             appendLine("DEX: " + apk.dexCount + "; native .so: " + apk.nativeLibraryCount)
+            appendLine("DEX method IDs: " + apk.dexHeaders.sumOf { it.methodIds })
+            appendLine("DEX class definitions: " + apk.dexHeaders.sumOf { it.classDefs })
+            apk.dexHeaders.forEach {
+                appendLine("DEX " + it.name + ": method IDs " + it.methodIds +
+                    ", classes " + it.classDefs + ", strings " + it.stringIds)
+            }
             appendLine("ZIP entries: " + apk.entriesCount)
             appendLine("Manifest: " + apk.hasManifest + "; resources: " + apk.hasResources)
             appendLine("Requested permissions:")
@@ -342,8 +390,11 @@ fun SakuraPatchLabScreen(
                     Text(apk.packageName, style = MaterialTheme.typography.bodySmall)
                     Text("Version: " + (apk.version ?: "unknown") + " (" + apk.versionCode + ")")
                     Text("APK size: " + (apk.bytes / 1024 / 1024) + " MB")
+                    Text("Local scan time: " + apk.scanDurationMs + " ms")
                     Text("SHA-256: " + apk.sha256, style = MaterialTheme.typography.bodySmall)
                     Text("DEX: " + apk.dexCount + "  •  Native libraries: " + apk.nativeLibraryCount)
+                    Text("DEX method IDs: " + apk.dexHeaders.sumOf { it.methodIds })
+                    Text("DEX class definitions: " + apk.dexHeaders.sumOf { it.classDefs })
                     Text("Archive entries: " + apk.entriesCount)
                     Text("Manifest: " + if (apk.hasManifest) "Present" else "Missing")
                     Text("Resources: " + if (apk.hasResources) "Present" else "Not present")
@@ -433,6 +484,10 @@ fun SakuraPatchLabScreen(
                         Text("Added paths: " + added.size)
                         Text("Removed paths: " + removed.size)
                         Text("Changed ZIP CRC / size: " + changed)
+                        Text("DEX class-definition count change: " +
+                            (other.dexHeaders.sumOf { it.classDefs } - apk.dexHeaders.sumOf { it.classDefs }))
+                        Text("DEX method-ID count change: " +
+                            (other.dexHeaders.sumOf { it.methodIds } - apk.dexHeaders.sumOf { it.methodIds }))
                         Text("New requested permissions: " + addedPermissions.size)
                         Text("Removed requested permissions: " + removedPermissions.size)
                         addedPermissions.take(6).forEach { Text("+ " + it, style = MaterialTheme.typography.bodySmall) }

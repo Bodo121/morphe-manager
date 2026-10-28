@@ -116,3 +116,10 @@ The following are source-code changes, **not yet an end-to-end validated release
 - [x] Profiles are exposed in Settings and the Home shortcut. Existing expert selections remain accessible.
 - [ ] Add one-tap profile selection directly to the per-app patch sheet, user-defined profile sorting and package/version metadata.
 - [ ] Test profile migrations, source refreshes and options recovery on physical devices.
+
+## DEX header and launch smoke-test increment
+
+- [x] PatchLab now reads bounded 112-byte DEX headers for each classes*.dex: real method-ID, string-ID and class-definition counts, without inflating entire DEX files.
+- [x] Sakura Diff displays aggregate DEX count changes and the local scan duration; these are **structural metrics**, not semantic bytecode differences or fingerprint matches.
+- [x] Provide a manual Android-emulator launch smoke-test workflow to detect app process exit and collect crash logcat; device-specific HyperOS launch remains unverified.
+- [ ] Full DEX fingerprint matching, resources/manifest decoding, patch conflict isolation, true rollback, and performance engine require deeper implementation and device validation.
