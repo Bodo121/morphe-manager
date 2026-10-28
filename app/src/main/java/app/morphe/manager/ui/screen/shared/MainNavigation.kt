@@ -11,7 +11,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
-import androidx.compose.material3.VerticalDivider
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,8 +35,10 @@ import kotlin.math.sign
 
 /** The places the main screen pages between, in the order its pager lays them out. */
 enum class MainPage(@param:StringRes val titleRes: Int, val icon: ImageVector) {
+    APPS(R.string.sakura_nav_home, MaterialSymbols.Rounded.Home),
+    PATCHER(R.string.sakura_nav_patcher, MaterialSymbols.Rounded.Auto_fix_high),
+    PATCH_LAB(R.string.sakura_nav_lab, MaterialSymbols.Rounded.Tune),
     SOURCES(R.string.sources, MaterialSymbols.Rounded.Folder_code),
-    APPS(R.string.apps, MaterialSymbols.Rounded.Apps),
     SETTINGS(R.string.settings, MaterialSymbols.Rounded.Settings)
 }
 
@@ -45,9 +47,8 @@ enum class MainPage(@param:StringRes val titleRes: Int, val icon: ImageVector) {
  * next to first, so the pages between are never drawn on the way and the slide costs what a swipe does.
  */
 suspend fun PagerState.turnTo(page: MainPage) {
-    val distance = page.ordinal - currentPage
-    if (abs(distance) > 1) scrollToPage(page.ordinal - distance.sign)
-    animateScrollToPage(page.ordinal)
+    // Low-motion Sakura navigation: no unnecessary intermediary page rendering.
+    scrollToPage(page.ordinal)
 }
 
 /**
@@ -129,35 +130,27 @@ fun MainPagerScaffold(
                 pager(Modifier.weight(1f).fillMaxHeight(), sidebarFocus, 0.dp)
             }
         } else {
-            val barHaze = rememberHazeState()
             FloatingBarsLayout(
                 modifier = Modifier.fillMaxSize(),
                 bottomBar = {
-                    // Removed rather than faded, as the pill floats over the docked bars and would take their taps
-                    AnimatedVisibility(
-                        visible = !navigationCovered,
-                        enter = Animations.fadeIn,
-                        exit = Animations.fadeOut
+                    NavigationBar(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                        tonalElevation = 0.dp
                     ) {
-                        CompositionLocalProvider(LocalBackdropHaze provides barHaze) {
-                            FloatingPillBar(
-                                items = items.map { item ->
-                                    FloatingPillItem(
-                                        icon = item.icon,
-                                        label = item.label,
-                                        onClick = { select(item.page) },
-                                        selected = item.page == current,
-                                        contentDescription = item.contentDescription,
-                                        modifier = item.modifier
-                                    )
-                                }
+                        items.forEach { item ->
+                            NavigationBarItem(
+                                selected = item.page == current,
+                                onClick = { select(item.page) },
+                                icon = { Icon(item.icon, contentDescription = null) },
+                                label = { Text(item.label, maxLines = 1) },
+                                alwaysShowLabel = true,
+                                modifier = item.modifier
                             )
                         }
                     }
                 }
             ) { _, bottomBarHeight ->
-                // What the pill blurs as a page scrolls on under it
-                pager(Modifier.fillMaxSize().hazeSource(barHaze), null, bottomBarHeight)
+                pager(Modifier.fillMaxSize(), null, bottomBarHeight)
             }
         }
     }

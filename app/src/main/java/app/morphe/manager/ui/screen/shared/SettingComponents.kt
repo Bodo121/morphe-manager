@@ -50,7 +50,7 @@ import com.composables.icons.materialsymbols.roundedfilled.*
  * the edge and controls, since filled ones read as a wash of color on a colored dialog.
  */
 @Composable
-fun cardFill(): Color = ThemeTraitsDefaults.surfaceColor(MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp))
+fun cardFill(): Color = ThemeTraitsDefaults.surfaceColor(MaterialTheme.colorScheme.surfaceContainer)
 
 /**
  * Elevated card with proper Material 3 theming.
@@ -76,19 +76,19 @@ fun SurfaceCard(
     val group = LocalSegmentRegistry.current
     val row = remember { Any() }
     val shape = if (group == null) {
-        shape?.let { animateCornersAsState(it) } ?: RoundedCornerShape(cornerRadius)
+        shape ?: RoundedCornerShape(cornerRadius)
     } else {
         // A row settling into its place takes its shape at once, only later moves ease it over
         val memory = remember { RowPlacement() }
         val placed = group.isPlaced(row)
         SideEffect { memory.placed = placed }
         DisposableEffect(group) { onDispose { group.remove(row) } }
-        animateCornersAsState(group.shape(row), animate = memory.placed)
+        group.shape(row)
     }
     val border = when {
         showBorder -> CardBorder.of(borderColor)
         group != null -> CardBorder.of(appAccentBorder(null))
-        else -> null
+        else -> CardBorder.of(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
     }
 
     Surface(

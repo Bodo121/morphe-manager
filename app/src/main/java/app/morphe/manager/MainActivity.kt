@@ -23,6 +23,8 @@ import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -579,12 +581,12 @@ private fun MorpheManager(vm: MainViewModel) {
             // Every screen opens deeper than the main one along Material's shared Z axis, rather than
             // sideways, which the main screen's own pages already move. Back runs it in reverse, and
             // under the predictive gesture the screen leaving shrinks away instead
-            enterTransition = { sharedAxisZEnter(forward = true) },
-            exitTransition = { sharedAxisZExit(forward = true) },
-            popEnterTransition = { sharedAxisZEnter(forward = false) },
-            popExitTransition = { sharedAxisZExit(forward = false) },
-            predictivePopEnterTransition = { sharedAxisZEnter(forward = false) },
-            predictivePopExitTransition = { Animations.predictiveBackExit }
+            enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None },
+            popEnterTransition = { EnterTransition.None },
+            popExitTransition = { ExitTransition.None },
+            predictivePopEnterTransition = { EnterTransition.None },
+            predictivePopExitTransition = { ExitTransition.None }
         ) {
             composable<HomeScreen> { entry ->
                 val bundleUpdateProgress by homeViewModel.bundleUpdateProgress.collectAsStateWithLifecycle(null)

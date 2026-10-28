@@ -9,6 +9,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.*
@@ -139,6 +140,7 @@ fun HomeScreen(
 
     // Collect state flows
     val availablePatches by homeViewModel.availablePatches.collectAsStateWithLifecycle(0)
+    val loadedSources by homeViewModel.patchBundleRepository.sources.collectAsStateWithLifecycle()
     // Atomic home state - null means pipeline is still initializing (shimmer)
     val homeAppState by homeViewModel.apps.homeAppState.collectAsStateWithLifecycle()
     val homeAppItems = homeAppState?.visible ?: emptyList()
@@ -342,7 +344,7 @@ fun HomeScreen(
         navigationCovered = when (MainPage.entries[pagerState.currentPage]) {
             MainPage.APPS -> sectionState.isFooterBarVisible
             MainPage.SOURCES -> sourcesPageState.isFooterBarVisible
-            MainPage.SETTINGS -> false
+            MainPage.SETTINGS, MainPage.PATCHER, MainPage.PATCH_LAB -> false
         },
         // The tour moves between the pages itself, and a swipe would leave its spotlight behind
         swipeEnabled = onboardingState == null,
@@ -368,6 +370,29 @@ fun HomeScreen(
         }
     ) { page, bottomBarHeight ->
         when (page) {
+            MainPage.PATCHER -> SakuraPatcherLanding(
+                sourceCount = loadedSources.size,
+                availablePatches = availablePatches,
+                repatchableCount = repatchableApps.size,
+                bottomBarHeight = bottomBarHeight,
+                onChooseApk = {
+                    if (availablePatches <= 0) messages.show(sourcesLoadingText)
+                    else homeViewModel.patchFlow.startOtherAppsFlow(otherAppsText)
+                },
+                onOpenApps = { openPage(MainPage.APPS) },
+                onOpenPatchLab = { openPage(MainPage.PATCH_LAB) },
+                onOpenSources = { openPage(MainPage.SOURCES) },
+                onStartBatch = { if (repatchableApps.isNotEmpty()) onStartBatchPatch(repatchableApps) }
+            )
+
+            MainPage.PATCH_LAB -> androidx.compose.foundation.layout.Column(
+                modifier = Modifier.fillMaxSize()
+                    .statusBarsPadding()
+                    .padding(bottom = bottomBarHeight)
+            ) {
+                app.morphe.manager.ui.screen.settings.advanced.SakuraPatchLabScreen()
+            }
+
             MainPage.SOURCES -> SourcesPage(
                 homeViewModel = homeViewModel,
                 bottomBarHeight = bottomBarHeight,
