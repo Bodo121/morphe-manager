@@ -7,7 +7,11 @@ package app.morphe.manager.ui.screen.settings
 
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import app.morphe.manager.ui.screen.settings.advanced.PatchOptionsSection
 import app.morphe.manager.ui.screen.settings.advanced.PatcherSettings
@@ -34,6 +38,17 @@ fun SettingsSubpageScreen(
     navigation: SettingsNavigation,
     onBack: () -> Unit
 ) {
+    // PatchLab contains its own large scrollable diagnostic report. Avoid nesting that
+    // scroll container inside SubpageScaffold's verticalScroll (infinite constraints).
+    if (subpage == SettingsSubpage.PATCH_LAB) {
+        Column(Modifier.fillMaxSize().statusBarsPadding()) {
+            TextButton(onClick = onBack) { Text("‹ Back to settings") }
+            Box(Modifier.weight(1f)) {
+                SakuraPatchLabScreen()
+            }
+        }
+        return
+    }
     SubpageScaffold(title = stringResource(subpage.titleRes), onBack = onBack) {
         SettingsSubpageContent(subpage, homeViewModel, navigation)
     }
