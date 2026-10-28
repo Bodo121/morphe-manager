@@ -6,9 +6,15 @@
 package app.morphe.manager.ui.screen.settings.advanced
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.Switch
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import kotlinx.coroutines.launch
 import androidx.compose.ui.res.stringResource
 import app.morphe.manager.R
 import app.morphe.manager.ui.screen.settings.SettingsSubpage
@@ -29,6 +35,9 @@ fun PatcherSettings(settingsViewModel: SettingsViewModel = koinViewModel()) {
     val prefs = settingsViewModel.prefs
     val stripUnusedNativeLibs by prefs.stripUnusedNativeLibs.getAsState()
     val externalBatchPatchEnabled by prefs.externalBatchPatchEnabled.getAsState()
+    val crossPackageTarget by prefs.crossPackageTarget.getAsState()
+    val crossPackageSource by prefs.crossPackageSource.getAsState()
+    val scope = rememberCoroutineScope()
 
     SettingsColumn {
         SettingsSection(
@@ -56,6 +65,31 @@ fun PatcherSettings(settingsViewModel: SettingsViewModel = koinViewModel()) {
                     title = stringResource(R.string.settings_advanced_strip_unused_libs),
                     subtitle = stringResource(R.string.settings_advanced_strip_unused_libs_description)
                 )
+                Column(modifier = Modifier.padding(Defaults.SpaceLarge)) {
+                    Text("Experimental cross-package patch selection", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Show patches declared for a different package. This bypasses manager metadata filtering, not bytecode compatibility. An incompatible patch may still fail.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    OutlinedTextField(
+                        value = crossPackageTarget,
+                        onValueChange = { value -> scope.launch { prefs.crossPackageTarget.update(value) } },
+                        label = { Text("APK package (e.g. com.akshaykadam.pixelboard)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = crossPackageSource,
+                        onValueChange = { value -> scope.launch { prefs.crossPackageSource.update(value) } },
+                        label = { Text("Patches for (e.g. com.google.android.inputmethod.latin)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text(
+                        "Clear either field to disable. Select the target APK in Expert Mode. Existing APK package names are not changed.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
                 // Entry point other apps use to start a re-patch queue
                 SettingsSwitchItem(
                     checked = externalBatchPatchEnabled,
