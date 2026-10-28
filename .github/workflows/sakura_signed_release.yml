@@ -19,7 +19,7 @@ permissions:
 jobs:
   signed-release:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -61,7 +61,15 @@ jobs:
           chmod 600 app/keystore.jks
           keytool -list -keystore app/keystore.jks -storepass "$KEYSTORE_PASSWORD" -alias "$KEYSTORE_ENTRY_ALIAS" > /dev/null
 
-      # Debug/test APKs aren't published, and unit tests remain manual as requested.
+      - name: Roadmap regression tests
+        timeout-minutes: 12
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ./gradlew :app:testDebugUnitTest --tests 'app.morphe.manager.domain.workspace.*' --console=plain --stacktrace
+          ./gradlew :patcher-core:test --console=plain --stacktrace
+
+      # Only permanent-key release APKs are published.
       - name: Build optimized, signed, non-debug release APK
         timeout-minutes: 35
         env:
@@ -83,14 +91,42 @@ jobs:
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n1)
           "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK"
           ID=$("$BUILD_TOOLS/aapt" dump badging "$APK" | sed -n "s/^package: name='\([^']*\)'.*/\1/p" | head -n 1)
-          test "$ID" = "app.morphe.manager" || { echo "::error::Release has wrong package ID: $ID"; exit 1; }
+          test "$ID" = "app.sakura.patcher" || { echo "::error::Release has wrong package ID: $ID"; exit 1; }
           cp "$APK" "SakuraPatcher-release.apk"
+
+      - name: Build and verify migration bridge
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEYSTORE_ENTRY_ALIAS: ${{ secrets.KEYSTORE_ENTRY_ALIAS }}
+          KEYSTORE_ENTRY_PASSWORD: ${{ secrets.KEYSTORE_ENTRY_PASSWORD }}
+        run: |
+          ./gradlew :app:assembleRelease -PlegacyMigration --build-cache --console=plain --stacktrace
+          APK=$(find app/build/outputs/apk/release -maxdepth 1 -name '*.apk' -type f | head -n1)
+          BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n1)
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK"
+          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -q "package: name='app.morphe.manager'"
+          cp "$APK" SakuraPatcher-legacy-migration.apk
+          sha256sum SakuraPatcher-*.apk > SHA256SUMS
+
+      - name: Emulator startup smoke test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          script: python3 scripts/sakura_emulator_smoke.py
 
       - name: Upload signed release artifact
         uses: actions/upload-artifact@v4
         with:
           name: SakuraPatcher-release
-          path: SakuraPatcher-release.apk
+          path: |
+            SakuraPatcher-release.apk
+            SakuraPatcher-legacy-migration.apk
+            SHA256SUMS
+            smoke-results/**
           if-no-files-found: error
           retention-days: 30
 
@@ -98,11 +134,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: v2.2.0-sakura.${{ github.run_number }}
+          RELEASE_TAG: v3.0.0-sakura.${{ github.run_number }}
         shell: bash
         run: |
           set -euo pipefail
-          gh release create "$RELEASE_TAG" SakuraPatcher-release.apk \
+          gh release create "$RELEASE_TAG" SakuraPatcher-release.apk SakuraPatcher-legacy-migration.apk SHA256SUMS \
             --target "$GITHUB_SHA" \
             --title "SakuraPatcher $RELEASE_TAG" \
-            --notes "SakuraPatcher optimized Android release (app.morphe.manager). Signed with the repository's persistent release key. Startup responsiveness and patch source loading refinements. Requires installation approval. If upgrading from a .debug variant, both packages are separate applications."
+            --notes-file docs/SAKURA-3-RELEASE.md

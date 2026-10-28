@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import app.morphe.manager.R
+import androidx.compose.ui.res.stringResource
 import app.morphe.manager.domain.manager.PreferencesManager
 import org.koin.compose.koinInject
 import java.time.LocalDate
@@ -30,9 +32,16 @@ internal fun SakuraHomeOverview(
     onPatchLab: () -> Unit,
     onSources: () -> Unit,
     onSelections: () -> Unit,
+    onWorkspace: () -> Unit,
     greeting: String? = null,
     prefs: PreferencesManager = koinInject()
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val recent by produceState<app.morphe.manager.domain.workspace.BuildRecipe?>(null) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            app.morphe.manager.domain.workspace.BuildWorkspace(context).readAll().firstOrNull()
+        }
+    }
     val scheme = MaterialTheme.colorScheme
     val nickname by prefs.sakuraGreetingName.getAsState()
     val today = remember { LocalDate.now() }
@@ -65,14 +74,14 @@ internal fun SakuraHomeOverview(
             shape = RoundedCornerShape(18.dp),
             border = BorderStroke(1.dp, scheme.primary.copy(alpha = 0.35f))
         ) {
-            Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     Text("Sakura Core", color = scheme.primary, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
                     Text("Patch your apps", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Text("Choose an installed app below or open an APK from storage.",
                         style = MaterialTheme.typography.bodySmall, color = scheme.onPrimaryContainer)
                 }
-                Button(onClick = onSelectApk, modifier = Modifier.heightIn(min = 48.dp)) { Text("Select APK") }
+                Button(onClick = onSelectApk, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.sakura_ui_select_apk)) }
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -80,8 +89,8 @@ internal fun SakuraHomeOverview(
             SakuraMetric(availableApps.toString(), "Available apps", Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            SakuraQuickAction("Select APK to Patch", "Installed or storage file", MaterialSymbols.Rounded.Auto_fix_high,
-                onSelectApk, Modifier.weight(1f))
+            SakuraQuickAction("Recent builds", recent?.let { "${it.packageName} · ${it.status}" } ?: "Recipes, logs and recovery", MaterialSymbols.Rounded.History,
+                onWorkspace, Modifier.weight(1f))
             SakuraQuickAction("Sakura PatchLab", "Bytecode structure diagnostics", MaterialSymbols.Rounded.Tune,
                 onPatchLab, Modifier.weight(1f))
         }

@@ -169,6 +169,7 @@ private fun AdaptiveProgressContent(
                     progress = progress,
                     completed = completed,
                     total = total,
+                    patchProgress = patchProgress,
                     accentColor = accentColor,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -191,6 +192,7 @@ private fun AdaptiveProgressContent(
                 progress = progress,
                 completed = completed,
                 total = total,
+                patchProgress = patchProgress,
                 accentColor = accentColor,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -281,9 +283,12 @@ private fun CircularProgressWithStats(
     progress: () -> Float,
     completed: Int,
     total: Int,
+    patchProgress: PatchProgressSource,
     accentColor: Color?,
     modifier: Modifier = Modifier
 ) {
+    val step = patchProgress.steps.firstOrNull { it.state == State.RUNNING }
+    val determinate = step?.id == app.morphe.manager.ui.model.StepId.EXECUTE_PATCHES && total > 0
     val percent by remember(progress) {
         derivedStateOf { (progress().coerceIn(0f, 1f) * 100).toInt() }
     }
@@ -308,7 +313,7 @@ private fun CircularProgressWithStats(
             ) {
                 Column {
                     Text(
-                        "Compilation in progress",
+                        step?.name ?: stringResource(R.string.patching),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -321,19 +326,19 @@ private fun CircularProgressWithStats(
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
-                Text(
-                    stringResource(R.string.patcher_percentage, percent),
+                if (determinate) Text(
+                    stringResource(R.string.patcher_percentage, (completed * 100 / total).coerceIn(0, 100)),
                     style = MaterialTheme.typography.titleMedium,
                     color = accentColor ?: MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
                 )
             }
-            LinearProgressIndicator(
-                progress = progress,
+            if (determinate) LinearProgressIndicator(
+                progress = { completed.toFloat() / total },
                 modifier = Modifier.fillMaxWidth().height(8.dp),
                 color = accentColor ?: MaterialTheme.colorScheme.primary,
                 trackColor = MaterialTheme.colorScheme.surfaceVariant
-            )
+            ) else LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(8.dp), color = accentColor ?: MaterialTheme.colorScheme.primary)
         }
     }
 }

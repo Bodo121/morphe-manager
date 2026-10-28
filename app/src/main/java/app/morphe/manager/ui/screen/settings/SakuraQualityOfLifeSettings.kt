@@ -32,14 +32,14 @@ fun SakuraGreetingNameSetting(prefs: PreferencesManager) {
     if (open) {
         AlertDialog(
             onDismissRequest = { open = false },
-            title = { Text("What should Sakura call you?") },
+            title = { Text(stringResource(R.string.sakura_ui_what_should_sakura_call_you)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = draft,
                         onValueChange = { draft = it.take(32) },
                         singleLine = true,
-                        label = { Text("Nickname (optional)") }
+                        label = { Text(stringResource(R.string.sakura_ui_nickname_optional)) }
                     )
                     Text("Saved locally. Leave empty to use the regular greetings.",
                         style = MaterialTheme.typography.bodySmall)
@@ -49,10 +49,10 @@ fun SakuraGreetingNameSetting(prefs: PreferencesManager) {
                 TextButton(onClick = {
                     scope.launch { prefs.sakuraGreetingName.update(draft.trim()) }
                     open = false
-                }) { Text("Save") }
+                }) { Text(stringResource(R.string.sakura_ui_save)) }
             },
             dismissButton = {
-                TextButton(onClick = { open = false }) { Text("Cancel") }
+                TextButton(onClick = { open = false }) { Text(stringResource(R.string.sakura_ui_cancel)) }
             }
         )
     }
@@ -69,4 +69,15 @@ fun SakuraHighRefreshSetting(prefs: PreferencesManager) {
         checked = enabled,
         onToggle = { scope.launch { prefs.sakuraPreferHighRefresh.update(!enabled) } }
     )
+}
+
+@Composable
+fun SakuraMotionSettings(prefs: PreferencesManager) {
+    val reduce by prefs.sakuraReduceMotion.getAsState()
+    val pause by prefs.sakuraPauseEffects.getAsState()
+    val scope = rememberCoroutineScope()
+    SettingsSwitchItem(title = stringResource(R.string.sakura_reduce_motion), subtitle = stringResource(R.string.sakura_reduce_motion_summary),
+        icon = MaterialSymbols.Rounded.Accessibility, checked = reduce, onToggle = { scope.launch { prefs.sakuraReduceMotion.update(!reduce) } })
+    SettingsSwitchItem(title = stringResource(R.string.sakura_pause_effects), subtitle = stringResource(R.string.sakura_pause_effects_summary),
+        icon = MaterialSymbols.Rounded.Speed, checked = pause, onToggle = { scope.launch { prefs.sakuraPauseEffects.update(!pause) } })
 }

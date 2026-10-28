@@ -41,6 +41,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -69,6 +71,8 @@ import app.morphe.manager.ui.screen.shared.MainPage
 import app.morphe.manager.ui.screen.shared.MessageHost
 import app.morphe.manager.ui.screen.shared.RandomBackground
 import app.morphe.manager.ui.screen.shared.UserMessages
+import app.morphe.manager.ui.screen.shared.LocalReducedMotion
+import app.morphe.manager.ui.screen.shared.rememberReducedMotion
 import app.morphe.manager.ui.screen.shared.rememberRandomBackground
 import app.morphe.manager.ui.screen.shared.sharedAxisZEnter
 import app.morphe.manager.ui.screen.shared.sharedAxisZExit
@@ -397,6 +401,10 @@ private fun MorpheManager(vm: MainViewModel) {
     val resolvedRandomBackground =
         if (backgroundType == BackgroundType.RANDOM) rememberRandomBackground(prefs) else null
     val seasonalThemes by prefs.seasonalThemes.getAsState()
+    val reduceMotion = rememberReducedMotion()
+    val pauseEffects by prefs.sakuraPauseEffects.getAsState()
+    val currentEntry by navController.currentBackStackEntryAsState()
+    val onPatcherPage = currentEntry?.destination?.hasRoute<Patcher>() == true || currentEntry?.destination?.hasRoute<BatchPatcher>() == true
     // Read once per launch, so an event that begins while the app is open waits for the next one
     val seasonalEvent = remember { SeasonalEvent.on() }
 
@@ -585,7 +593,8 @@ private fun MorpheManager(vm: MainViewModel) {
         scope.launch { prefs.firstLaunch.update(false) }
     }
 
-    // Box with background at the highest level
+    // Share one motion observer with all screens and list items.
+    CompositionLocalProvider(LocalReducedMotion provides reduceMotion) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -597,7 +606,8 @@ private fun MorpheManager(vm: MainViewModel) {
             resolvedType = resolvedRandomBackground,
             enableParallax = enableParallax,
             speedMultiplier = { patcherBackgroundSpeed.floatValue },
-            patchingCompleted = { patchingCompleted.value }
+            patchingCompleted = { patchingCompleted.value },
+            effectsEnabled = !(pauseEffects && onPatcherPage)
         )
 
         // What the tour's card blurs, recorded only while the tour runs
@@ -611,12 +621,12 @@ private fun MorpheManager(vm: MainViewModel) {
             // Every screen opens deeper than the main one along Material's shared Z axis, rather than
             // sideways, which the main screen's own pages already move. Back runs it in reverse, and
             // under the predictive gesture the screen leaving shrinks away instead
-            enterTransition = { Animations.fadeIn },
-            exitTransition = { Animations.fadeOut },
-            popEnterTransition = { Animations.fadeIn },
-            popExitTransition = { Animations.fadeOut },
-            predictivePopEnterTransition = { Animations.fadeIn },
-            predictivePopExitTransition = { Animations.predictiveBackExit }
+            enterTransition = { if (reduceMotion) androidx.compose.animation.EnterTransition.None else Animations.fadeIn },
+            exitTransition = { if (reduceMotion) androidx.compose.animation.ExitTransition.None else Animations.fadeOut },
+            popEnterTransition = { if (reduceMotion) androidx.compose.animation.EnterTransition.None else Animations.fadeIn },
+            popExitTransition = { if (reduceMotion) androidx.compose.animation.ExitTransition.None else Animations.fadeOut },
+            predictivePopEnterTransition = { if (reduceMotion) androidx.compose.animation.EnterTransition.None else Animations.fadeIn },
+            predictivePopExitTransition = { if (reduceMotion) androidx.compose.animation.ExitTransition.None else Animations.predictiveBackExit }
         ) {
             composable<HomeScreen> { entry ->
                 val bundleUpdateProgress by homeViewModel.bundleUpdateProgress.collectAsStateWithLifecycle(null)
@@ -727,6 +737,7 @@ private fun MorpheManager(vm: MainViewModel) {
             }
         }
     }
+    }
 }
 
 /** Where the settings lead out to, as routes of this navigation, see [SettingsNavigation]. */
@@ -734,7 +745,8 @@ private fun NavController.settingsNavigation(startTour: (() -> Unit)?) = Setting
     openSubpage = { subpage -> navigate(SettingsDetail(subpage.name)) { launchSingleTop = true } },
     openPatchSelections = { navigate(PatchSelections) { launchSingleTop = true } },
     openLicenses = { navigate(Licenses) { launchSingleTop = true } },
-    startTour = startTour
+    startTour = startTour,
+    startBuild = { params -> navigateComplex(Patcher, params) }
 )
 
 // Androidx Navigation does not support storing complex types in route objects, so we have

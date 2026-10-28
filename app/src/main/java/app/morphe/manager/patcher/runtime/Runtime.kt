@@ -74,7 +74,9 @@ class Runtime(
         onPatchFailed: (String) -> Unit,
         onProgress: ProgressEventHandler,
         stripUnusedNativeLibs: Boolean,
-        onMergedApkReady: (suspend (File) -> Unit)? = null
+        onMergedApkReady: (suspend (File) -> Unit)? = null,
+        dryRun: Boolean = false,
+        bundleFiles: Map<Int, String> = emptyMap()
     ): Duration {
         val mergedApk = fs.tempDir.resolve("merged-${System.currentTimeMillis()}.apk")
         val request = PatchRequest(
@@ -85,9 +87,10 @@ class Runtime(
             mergedApkFile = mergedApk.absolutePath,
             temporaryDir = fs.tempDir.absolutePath,
             workspaceDir = context.cacheDir.resolve("patch-workspace").absolutePath,
-            bundles = requestedBundles(selectedPatches, options),
+            bundles = requestedBundles(selectedPatches, options, bundleFiles),
             stripUnusedNativeLibs = stripUnusedNativeLibs,
-            device = deviceConfig()
+            device = deviceConfig(),
+            dryRun = dryRun
         )
         val listener = ProgressReporter(context, logger, onProgress, onPatchCompleted, onPatchFailed)
 
@@ -115,13 +118,13 @@ class Runtime(
         }
     }
 
-    private suspend fun requestedBundles(selectedPatches: PatchSelection, options: Options) =
+    private suspend fun requestedBundles(selectedPatches: PatchSelection, options: Options, bundleFiles: Map<Int, String>) =
         patchBundlesRepo.bundles.first().let { bundles ->
             selectedPatches.map { (uid, patches) ->
                 val bundle = bundles[uid] ?: throw IllegalArgumentException("Patch bundle $uid does not exist")
                 PatchRequest.Bundle(
                     uid = uid,
-                    patchesFile = bundle.patchesJar,
+                    patchesFile = bundleFiles[uid] ?: bundle.patchesJar,
                     patches = patches,
                     options = options[uid].orEmpty().mapValues { (_, patchOptions) ->
                         patchOptions.mapValues { (_, value) -> optionValueToJson(value) }

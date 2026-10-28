@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Applies below API 31, where a backup and a device transfer follow the same rules. -->
 <full-backup-content>
+    <exclude domain="file" path="build-workspace" />
     <exclude domain="root" path="app_original-apks" />
     <exclude domain="root" path="app_patched-apps" />
     <exclude domain="root" path="app_patch_bundles" />

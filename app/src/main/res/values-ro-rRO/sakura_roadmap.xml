@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sakura_workspace_title">Spațiu de compilare</string>
+    <string name="sakura_workspace_summary">Istoric, rețete, recuperare și verificarea instalării</string>
+    <string name="sakura_ready_title">Gata de modificare?</string>
+    <string name="sakura_build_action">Compilează APK</string>
+    <string name="sakura_dry_run">Verificare fără compilare</string>
+    <string name="sakura_petals">Petale Sakura</string>
+    <string name="sakura_reduce_motion">Redu animațiile</string>
+    <string name="sakura_reduce_motion_summary">Navigare instantanee, fără efecte decorative. Sunt respectate setările Android și TalkBack.</string>
+    <string name="sakura_pause_effects">Oprește efectele în timpul modificării</string>
+    <string name="sakura_pause_effects_summary">Eliberează resurse pentru modificare. Efectele se opresc și în fundal sau în modul de economisire.</string>
+    <string name="sakura_ui_review_rebuild">Verifică recompilarea</string>
+    <string name="sakura_ui_continue">Continuă</string>
+    <string name="sakura_ui_cancel">Anulează</string>
+    <string name="sakura_ui_delete_archived_build">Ștergi compilarea arhivată?</string>
+    <string name="sakura_ui_removes_its_saved_apks_recipe_and_log_installed_apps_and_patch_se">Șterge APK-urile salvate, rețeta și jurnalul. Aplicațiile instalate și selecțiile rămân neschimbate.</string>
+    <string name="sakura_ui_delete">Șterge</string>
+    <string name="sakura_ui_build_report">Raport de compilare</string>
+    <string name="sakura_ui_close">Închide</string>
+    <string name="sakura_ui_search_app_or_result">Caută aplicația sau rezultatul</string>
+    <string name="sakura_ui_import_recipe">Importă rețeta</string>
+    <string name="sakura_ui_your_next_patch_or_dry_run_will_appear_here">Următoarea modificare sau verificare va apărea aici.</string>
+    <string name="sakura_ui_rebuild">Recompilează</string>
+    <string name="sakura_ui_new_apk">APK nou</string>
+    <string name="sakura_ui_recipe">Rețetă</string>
+    <string name="sakura_ui_log">Jurnal</string>
+    <string name="sakura_ui_export_apk">Exportă APK</string>
+    <string name="sakura_ui_check_installation">Verifică instalarea</string>
+    <string name="sakura_ui_delete_saved_profile">Ștergi profilul salvat?</string>
+    <string name="sakura_ui_restore">Restaurează</string>
+    <string name="sakura_ui_profile_name">Numele profilului</string>
+    <string name="sakura_ui_target_package_id">Identificatorul pachetului</string>
+    <string name="sakura_ui_save_current_patch_configuration">Salvează configurația curentă</string>
+    <string name="sakura_ui_import_json">Importă JSON</string>
+    <string name="sakura_ui_export_json">Exportă JSON</string>
+    <string name="sakura_ui_compare_apk">Compară APK</string>
+    <string name="sakura_ui_select_apk">Selectează APK</string>
+    <string name="sakura_ui_what_should_sakura_call_you">Cum să îți spună Sakura?</string>
+    <string name="sakura_ui_nickname_optional">Poreclă (opțional)</string>
+    <string name="sakura_ui_save">Salvează</string>
+    <string name="sakura_ui_back_to_settings">‹ Înapoi la setări</string>
+    <string name="sakura_review_patches">Verifică modificările</string>
+    <string name="sakura_recheck_storage">Verifică spațiul din nou</string>
+</resources>

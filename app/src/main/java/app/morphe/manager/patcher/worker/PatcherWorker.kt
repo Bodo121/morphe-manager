@@ -11,6 +11,9 @@
 package app.morphe.manager.patcher.worker
 
 import android.annotation.SuppressLint
+import app.morphe.manager.domain.workspace.BuildWorkspace
+import app.morphe.manager.domain.workspace.BuildRecipe
+import app.morphe.manager.patcher.logger.LogLevel
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -111,7 +114,8 @@ class PatcherWorker(
         /** Place of this app in the queue and the queue total, null for a single run. */
         val queuePosition: Pair<Int, Int>? = null,
         /** Whether the build is mounted over the stock app rather than installed. */
-        val useMount: Boolean = false
+        val useMount: Boolean = false,
+        val dryRun: Boolean = false
     ) {
         val packageName get() = input.packageName
     }
@@ -289,7 +293,7 @@ class PatcherWorker(
         }
 
         // A mount can still restore the stock app from it, the install flow deletes it after mounting
-        if (patchingSucceeded && !args.useMount) {
+        if (patchingSucceeded && !args.useMount && !args.dryRun) {
             (args.input as? SelectedApp.Local)?.takeIf { it.temporary }?.file?.delete()
         }
 
@@ -297,6 +301,16 @@ class PatcherWorker(
     }
 
     private suspend fun runPatcher(args: Args): Result {
+        val workspace = BuildWorkspace(applicationContext)
+        var recipe: BuildRecipe? = null
+        var failure: String? = null
+        val runLogger = object : Logger() {
+            override fun log(level: LogLevel, message: String) {
+                args.logger.log(level, message)
+                recipe?.let { saved -> runCatching { workspace.appendLog(saved.id, "[$level] $message") } }
+            }
+        }
+
 
         val totalPatches = args.selectedPatches.values.sumOf { it.size }
         var completedPatches = 0
@@ -360,7 +374,7 @@ class PatcherWorker(
         var unmounted = false
 
         return try {
-            if (args.input is SelectedApp.Installed &&
+            if (!args.dryRun && args.input is SelectedApp.Installed &&
                 installedAppRepository.get(args.packageName)?.installType == InstallType.MOUNT
             ) {
                 rootInstaller.unmount(args.packageName)
@@ -383,7 +397,11 @@ class PatcherWorker(
                 }
             }
 
-            keystoreManager.preloadSigner()
+            recipe = withContext(Dispatchers.IO) {
+                workspace.begin(inputFile, args.packageName, args.input.version, args.input.versionCode,
+                    args.selectedPatches, args.options, patchBundleRepository, prefs, args.dryRun)
+            }
+            if (!args.dryRun) keystoreManager.preloadSigner()
 
             val vm = patcherProcesses.preferredVm()
             val stripNativeLibs = prefs.stripUnusedNativeLibs.get()
@@ -400,14 +418,14 @@ class PatcherWorker(
 
             // What this build of Morphe brings to the run. Every bug report needs the versions,
             // and native lib stripping silently changes what ends up in the output APK
-            args.logger.info(
+            runLogger.info(
                 "$LOG_WORKER_PREFIX_BUILD " +
                         "$LOG_WORKER_FIELD_MANAGER=${BuildConfig.VERSION_NAME} " +
                         "$LOG_WORKER_FIELD_PATCHER=${BuildConfig.PATCHER_VERSION} " +
                         "$LOG_WORKER_FIELD_NATIVE_LIBS=$stripNativeLibs"
             )
 
-            args.logger.info(
+            runLogger.info(
                 "$LOG_WORKER_PREFIX_DEVICE " +
                         "$LOG_WORKER_FIELD_ANDROID=${Build.VERSION.RELEASE} " +
                         "$LOG_WORKER_FIELD_API=${Build.VERSION.SDK_INT} " +
@@ -417,7 +435,7 @@ class PatcherWorker(
                         "$LOG_WORKER_FIELD_STORAGE_TOTAL=\"${formatBytesForReport(deviceStats?.storageTotal ?: 0L)}\""
             )
 
-            args.logger.info(
+            runLogger.info(
                 "$LOG_WORKER_PREFIX_STARTED ${System.currentTimeMillis()} " +
                         "$LOG_WORKER_FIELD_PACKAGE=${args.packageName} " +
                         "$LOG_WORKER_FIELD_VERSION=${args.input.version} " +
@@ -433,13 +451,13 @@ class PatcherWorker(
             // One line per source rather than a joined list, so a name and its version stay
             // together no matter how many sources contributed to this run
             args.patchSources.forEach { source ->
-                args.logger.info(
+                runLogger.info(
                     "$LOG_WORKER_PREFIX_SOURCE $LOG_WORKER_FIELD_NAME=\"${source.name}\" " +
                             "$LOG_WORKER_FIELD_VERSION=\"${source.version ?: "?"}\""
                 )
             }
 
-            args.logger.logRuntime(vm)
+            runLogger.logRuntime(vm)
 
             val options = args.options.restrictTo(args.selectedPatches)
 
@@ -466,12 +484,14 @@ class PatcherWorker(
                 args.packageName,
                 args.selectedPatches,
                 options,
-                args.logger,
+                runLogger,
                 onPatchCompleted,
                 args.onPatchFailed,
                 ::updateProgress,
                 stripNativeLibs,
-                onMergedApkReady
+                if (args.dryRun) null else onMergedApkReady,
+                dryRun = args.dryRun,
+                bundleFiles = recipe?.let(workspace::pinnedSources).orEmpty()
             )
 
             val elapsed = try {
@@ -479,13 +499,18 @@ class PatcherWorker(
             } catch (e: JvmUnavailableException) {
                 // Nothing was patched yet, and ART can still take the run
                 // The cause tells a JVM that crashed on start from one the device had no room for
-                args.logger.warn("${e.message} (${e.cause?.javaClass?.simpleName}), patching on ART instead")
+                runLogger.warn("${e.message} (${e.cause?.javaClass?.simpleName}), patching on ART instead")
                 Log.w(tag, "Patcher JVM unavailable".logFmt(), e)
                 onRestart()
-                args.logger.logRuntime(PatcherVm.ART)
+                runLogger.logRuntime(PatcherVm.ART)
                 runtime(PatcherVm.ART).patchInput()
             }
 
+            if (args.dryRun) {
+                succeeded = true
+                runLogger.info("Dry run passed. No APK was written or installed; compilation/signing remain untested.")
+                return Result.success()
+            }
             updatePatcherNotification(stepName = signingApkLabel, patchProgress = null)
             val signTime = measureTime {
                 keystoreManager.sign(patchedApk)
@@ -493,10 +518,10 @@ class PatcherWorker(
                     Files.move(patchedApk.toPath(), File(args.output).toPath(), StandardCopyOption.REPLACE_EXISTING)
                 }
             }
-            args.logger.info("Signed apk in ${signTime.inWholeMilliseconds}ms")
+            runLogger.info("Signed apk in ${signTime.inWholeMilliseconds}ms")
             updateProgress(state = State.COMPLETED) // Signing
 
-            args.logger.info(
+            runLogger.info(
                 "$LOG_WORKER_PREFIX_SUCCEEDED $LOG_WORKER_FIELD_OUTPUT=${args.output} " +
                         "$LOG_WORKER_FIELD_SIZE=${File(args.output).length()} " +
                         "$LOG_WORKER_FIELD_ELAPSED=${elapsed.inWholeMilliseconds}ms"
@@ -509,10 +534,11 @@ class PatcherWorker(
             Result.success()
         } catch (e: PatcherKilledException) {
             Log.e(tag, "Patcher process ended: ${e.reason}".logFmt(), e)
-            args.logger.error("Patcher process ended: ${e.reason}")
+            runLogger.error("Patcher process ended: ${e.reason}")
             val message = applicationContext.getString(
                 if (e.crashed) R.string.patcher_process_crashed_message else R.string.patcher_process_killed_message
             )
+            failure = message
             updateProgress(state = State.FAILED, message = message)
             Result.failure(
                 workDataOf(FAILURE_MESSAGE_KEY to message)
@@ -528,6 +554,7 @@ class PatcherWorker(
                 R.string.patcher_out_of_memory_message,
                 e.heapLimitMb.toString()
             )
+            failure = message
             updateProgress(state = State.FAILED, message = message)
             Result.failure(
                 workDataOf(FAILURE_MESSAGE_KEY to message)
@@ -537,6 +564,7 @@ class PatcherWorker(
                 tag,
                 "An exception occurred in the patcher process while patching. ${e.originalStackTrace}".logFmt()
             )
+            failure = e.originalStackTrace
             updateProgress(state = State.FAILED, message = e.originalStackTrace)
             Result.failure(
                 workDataOf(FAILURE_MESSAGE_KEY to e.originalStackTrace.truncateForWorkData())
@@ -547,11 +575,21 @@ class PatcherWorker(
                 throw e
             }
             Log.e(tag, "An exception occurred while patching".logFmt(), e)
+            failure = e.stackTraceToString()
             updateProgress(state = State.FAILED, message = e.stackTraceToString())
             Result.failure(
                 workDataOf(FAILURE_MESSAGE_KEY to e.stackTraceToString().truncateForWorkData())
             )
         } finally {
+            recipe?.let { saved ->
+                withContext(NonCancellable + Dispatchers.IO) {
+                    runCatching { workspace.finish(saved,
+                        if (succeeded) { if (args.dryRun) "DRY_RUN_PASSED" else "SUCCESS" }
+                        else if (isStopped) "INTERRUPTED" else "FAILED",
+                        if (args.dryRun) null else File(args.output), failure) }
+                        .onFailure { Log.e(tag, "Could not finalize build history", it) }
+                }
+            }
             // Unmounted only to read the stock APK, so a run that produced nothing puts the patched one back
             if (unmounted && !succeeded) withContext(NonCancellable) {
                 runCatching { rootInstaller.mount(args.packageName) }
@@ -560,7 +598,7 @@ class PatcherWorker(
             if (!patchedApk.delete() && patchedApk.exists()) {
                 Log.w(tag, "Failed to delete temporary patched APK: ${patchedApk.absolutePath}".logFmt())
             }
-            if (!isStopped && args.announceCompletion) showCompletionNotification(
+            if (!isStopped && args.announceCompletion && !args.dryRun) showCompletionNotification(
                 succeeded,
                 autoInstallPending,
                 completionSoundEnabled,

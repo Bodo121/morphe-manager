@@ -11,6 +11,7 @@
 package app.morphe.manager.ui.viewmodel
 
 import android.app.Application
+import app.morphe.manager.domain.workspace.InstallDiagnostics
 import android.content.*
 import android.util.Log
 import androidx.annotation.StringRes
@@ -194,7 +195,10 @@ class UpdateViewModel(
      * dropped as well, so nothing is left staged that a later install could pick up.
      */
     private suspend fun requireApkArchive(location: File) = withContext(Dispatchers.IO) {
-        if (location.hasZipHeader()) return@withContext
+        if (location.hasZipHeader()) {
+            InstallDiagnostics.requireOwnUpdate(app, location)
+            return@withContext
+        }
 
         val size = runCatching { location.length() }.getOrDefault(0L)
         runCatching { location.delete() }
@@ -214,6 +218,13 @@ class UpdateViewModel(
         if (!hasDownloadedApk()) {
             resetToDownload()
             messages.show(R.string.update_download_missing)
+            return@launch
+        }
+
+        try {
+            withContext(Dispatchers.IO) { InstallDiagnostics.requireOwnUpdate(app, location) }
+        } catch (error: Exception) {
+            failInstall(error.message.orEmpty())
             return@launch
         }
 

@@ -58,6 +58,9 @@ enum class SettingsSubpage(
         MaterialSymbols.Rounded.Tune,
         searchable = false
     ),
+    BUILD_WORKSPACE(
+        R.string.sakura_workspace_title, R.string.sakura_workspace_summary, MaterialSymbols.Rounded.History, searchable = false
+    ),
     PATCHER(
         R.string.settings_section_patcher,
         R.string.settings_section_patcher_summary,

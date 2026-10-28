@@ -29,7 +29,8 @@ data class PatchRequest(
     val workspaceDir: String,
     val bundles: List<Bundle>,
     val stripUnusedNativeLibs: Boolean,
-    val device: DeviceConfig
+    val device: DeviceConfig,
+    val dryRun: Boolean = false
 ) {
     /**
      * @param uid The bundle as the app knows it.

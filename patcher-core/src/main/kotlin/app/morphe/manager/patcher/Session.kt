@@ -59,8 +59,6 @@ class Session(
         listener.patchesStarted()
 
         this().collect { (patch, exception) ->
-            if (patch !in selectedPatches) return@collect
-
             if (exception != null) {
                 logger.error("${patch.name} failed:")
                 logger.error(exception.stackTraceToString())
@@ -68,6 +66,7 @@ class Session(
                 throw exception
             }
 
+            if (patch !in selectedPatches) return@collect
             listener.patchSucceeded(patch.name.orEmpty())
 
             logger.info("${patch.name} succeeded")
@@ -76,7 +75,7 @@ class Session(
         listener.patchesFinished(selectedPatches.size)
     }
 
-    suspend fun run(output: File, selectedPatches: PatchList) {
+    suspend fun run(output: File, selectedPatches: PatchList, dryRun: Boolean = false) {
         listener.stepCompleted() // Unpacking
 
         java.util.logging.Logger.getLogger("").apply {
@@ -95,6 +94,11 @@ class Session(
                 logger.info("Applying patches...")
                 applyPatchesVerbose(selectedPatches.sortedBy { it.name })
             }
+        }
+
+        if (dryRun) {
+            logger.info("Dry run passed: selected patches and their dependencies executed. Compilation and signing were not tested.")
+            return
         }
 
         logger.info("Writing patched files...")

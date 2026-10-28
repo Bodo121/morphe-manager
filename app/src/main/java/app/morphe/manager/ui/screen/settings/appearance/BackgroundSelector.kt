@@ -191,6 +191,7 @@ fun DialogHostScope.BackgroundPickerDialog(
 }
 
 private fun backgroundIcon(type: BackgroundType): ImageVector = when (type) {
+    BackgroundType.SAKURA    -> MaterialSymbols.Rounded.Local_florist
     BackgroundType.CIRCLES   -> MaterialSymbols.Rounded.Circle
     BackgroundType.RINGS     -> MaterialSymbols.Rounded.Adjust
     BackgroundType.MESH      -> MaterialSymbols.Rounded.Grid_3x3

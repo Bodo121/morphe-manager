@@ -14,6 +14,8 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.*
@@ -67,6 +69,29 @@ fun PatcherScreen(
     onDeclineTour: () -> Unit = {},
     onChangePatches: () -> Unit = {}
 ) {
+    if (patcherViewModel.readyToBuild) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = onBackClick,
+            title = { androidx.compose.material3.Text(stringResource(R.string.sakura_ready_title)) },
+            text = { androidx.compose.foundation.lazy.LazyColumn { item {
+                Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                    AppIcon(packageName = patcherViewModel.packageName, contentDescription = null,
+                        modifier = Modifier.size(48.dp))
+                    androidx.compose.material3.Text(patcherViewModel.readySummary)
+                }
+            } } },
+            confirmButton = {
+                androidx.compose.material3.TextButton(enabled = patcherViewModel.storageReady, onClick = { patcherViewModel.startReviewedBuild(false) }) { androidx.compose.material3.Text(stringResource(R.string.sakura_build_action)) }
+            },
+            dismissButton = {
+                Column {
+                    androidx.compose.material3.TextButton(enabled = patcherViewModel.storageReady, onClick = { patcherViewModel.startReviewedBuild(true) }) { androidx.compose.material3.Text(stringResource(R.string.sakura_dry_run)) }
+                    androidx.compose.material3.TextButton(onClick = { if (patcherViewModel.storageReady) onChangePatches() else patcherViewModel.recheckReady() }) { androidx.compose.material3.Text(stringResource(if (patcherViewModel.storageReady) R.string.sakura_review_patches else R.string.sakura_recheck_storage)) }
+                    androidx.compose.material3.TextButton(onClick = onBackClick) { androidx.compose.material3.Text(stringResource(R.string.sakura_ui_cancel)) }
+                }
+            }
+        )
+    }
     // Worn by everything the screen shows, its dialogs included, down to the install button
     ProvideAccent(rememberAppColor(patcherViewModel.packageName)) {
         PatcherScreenContent(
@@ -128,7 +153,7 @@ private fun PatcherScreenContent(
             .collect { patcherViewModel.deferSuccessScreen(it) }
     }
 
-    val reduceMotion = rememberAccessibilityEnabled()
+    val reduceMotion = rememberReducedMotion()
     val displayProgress = rememberDisplayedPatchProgress(
         progress = { patcherViewModel.progress },
         succeeded = patcherSucceeded

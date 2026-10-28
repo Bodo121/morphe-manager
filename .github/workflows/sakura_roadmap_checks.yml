@@ -1,0 +1,39 @@
+name: Sakura roadmap checks
+on:
+  push:
+    branches: [sakura-roadmap-release]
+  workflow_dispatch:
+concurrency:
+  group: sakura-roadmap-checks-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+  packages: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            17
+            21
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Compile release and run roadmap regression tests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:compileReleaseKotlin --stacktrace --console=plain
+          ./gradlew :app:testDebugUnitTest --tests 'app.morphe.manager.domain.workspace.*' --stacktrace --console=plain
+          ./gradlew :patcher-core:test --stacktrace --console=plain
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: roadmap-test-results
+          path: |
+            app/build/reports/tests
+            patcher-core/build/reports/tests

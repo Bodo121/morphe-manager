@@ -13,7 +13,7 @@ plugins {
     alias(libs.plugins.devtools)
     alias(libs.plugins.about.libraries)
     alias(libs.plugins.about.libraries.android)
-    alias(libs.plugins.google.services)
+    // Sakura uses scheduled update checks; no upstream Firebase project credentials.
     signing
 }
 
@@ -230,10 +230,10 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "app.morphe.manager"
+        applicationId = if (project.hasProperty("legacyMigration")) "app.morphe.manager" else "app.sakura.patcher"
         minSdk = 26
 
-        versionName = version.toString()
+        versionName = "3.0.0-sakura.${System.getenv("GITHUB_RUN_NUMBER") ?: "0"}"
 
         // VersionCode derived from current time (1-minute intervals) + offset.
         val nowMillis = System.currentTimeMillis()
@@ -243,7 +243,7 @@ android {
         // 1 minute rounding and this offset still gives ~4,000 years of valid version codes
         // and still fall into Play store max version code range.
         val versionCodeOffset = 10010100
-        versionCode = timestampVersionCode + versionCodeOffset
+        versionCode = 50_000_000 + (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0)
 
         // Expose the resolved morphe-patcher version so PatcherViewModel can compare it
         // against the Patcher-Version declared in .mpp bundle manifests at runtime.

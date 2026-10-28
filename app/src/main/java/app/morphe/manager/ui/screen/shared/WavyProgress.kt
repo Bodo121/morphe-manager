@@ -110,7 +110,7 @@ fun WavyProgressBar(
 
 /** Share of the wave shown: [amplitude], or flat when accessibility services ask for less motion. */
 @Composable
-private fun rememberWaveHeight(amplitude: Float): Float = if (rememberAccessibilityEnabled()) 0f else amplitude
+private fun rememberWaveHeight(amplitude: Float): Float = if (rememberReducedMotion()) 0f else amplitude
 
 /**
  * The app's color where it reads as one, or the theme's primary, eased since the color can land a

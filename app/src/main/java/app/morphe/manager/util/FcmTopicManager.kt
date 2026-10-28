@@ -55,7 +55,7 @@ fun syncFcmTopics(
     useManagerPrereleases: Boolean,
     usePatchesPrereleases: Boolean = false,
 ) {
-    val messaging = FirebaseMessaging.getInstance()
+    val messaging = runCatching { FirebaseMessaging.getInstance() }.getOrNull() ?: return
 
     if (!notificationsEnabled) {
         FcmTopics.all.forEach { topic ->

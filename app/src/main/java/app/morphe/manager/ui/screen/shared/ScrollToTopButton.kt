@@ -179,7 +179,7 @@ private fun ScrollToTopButtonImpl(
         scope.launch { scrollToTop() }
         if (headerCollapse != null) scope.launch { headerCollapse.unfold() }
     }
-    val a11y = rememberAccessibilityEnabled()
+    val a11y = rememberReducedMotion()
     val label = stringResource(R.string.accessibility_scroll_to_top)
 
     val context = LocalContext.current

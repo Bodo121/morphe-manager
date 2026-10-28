@@ -141,6 +141,8 @@ class ManagerApplication : Application() {
         val shrinkNonAdaptiveIcons = false
         Coil.setImageLoader(
             ImageLoader.Builder(this)
+                .memoryCache { coil.memory.MemoryCache.Builder(this).maxSizePercent(0.12).build() }
+                .crossfade(false)
                 .components {
                     add(AppIconKeyer())
                     add(AppIconFetcher.Factory(AppIconPixels, shrinkNonAdaptiveIcons, this@ManagerApplication))
@@ -426,7 +428,7 @@ class ManagerApplication : Application() {
         // once copies no record claims are gone, so the log shows what the storage screen counts
         scope.launch(Dispatchers.IO) {
             installedAppRepository.pruneUnclaimedPatchedApks()
-            fs.logStorageContents()
+            if (BuildConfig.DEBUG) fs.logStorageContents()
         }
     }
 }

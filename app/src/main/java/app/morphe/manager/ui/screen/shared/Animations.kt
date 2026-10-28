@@ -31,6 +31,7 @@ private class LatestValue<T : Any> {
  */
 @Composable
 fun Modifier.animatedListItem(itemScope: LazyItemScope): Modifier = with(itemScope) {
+    if (rememberReducedMotion()) return@with this@animatedListItem
     val resizing = LocalListRowResizing.current?.isActive == true
     this@animatedListItem.animateItem(
         fadeInSpec = tween(Defaults.ANIMATION_DURATION),
@@ -270,8 +271,8 @@ fun FoldingVisibility(
     AnimatedVisibility(
         visible = visible,
         modifier = modifier,
-        enter = Animations.expandFadeEnter,
-        exit = Animations.shrinkFadeExit,
+        enter = if (rememberReducedMotion()) EnterTransition.None else Animations.expandFadeEnter,
+        exit = if (rememberReducedMotion()) ExitTransition.None else Animations.shrinkFadeExit,
         content = content
     )
 }

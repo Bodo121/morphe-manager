@@ -5,6 +5,10 @@
 package app.morphe.manager.ui.screen.settings.advanced
 
 import android.content.Context
+import androidx.room.withTransaction
+import app.morphe.manager.data.room.AppDatabase
+import app.morphe.manager.domain.workspace.BuildWorkspace
+import app.morphe.manager.domain.workspace.resolveSourceIdentity
 import android.util.AtomicFile
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -13,6 +17,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import app.morphe.manager.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -40,12 +46,14 @@ private data class SakuraProfile(
     val savedAt: Long,
     val selections: Map<Int, List<String>>,
     val options: Map<Int, Map<String, Map<String, String>>>,
-    val sourceNames: Map<Int, String>
+    val sourceNames: Map<Int, String>,
+    val sourceIdentities: Map<Int, String> = emptyMap(),
+    val sourceVersions: Map<Int, String?> = emptyMap()
 )
 
 @Serializable
 private data class SakuraProfileList(
-    val version: Int = 1,
+    val version: Int = 2,
     val profiles: List<SakuraProfile> = emptyList()
 )
 
@@ -64,7 +72,7 @@ private object SakuraProfilesStorage {
     fun parse(content: String): List<SakuraProfile> {
         require(content.length <= maxChars) { "Profile archive exceeds 1 MiB" }
         val archive = json.decodeFromString<SakuraProfileList>(content)
-        require(archive.version == 1) { "Unsupported profile version" }
+        require(archive.version in 1..2) { "Unsupported profile version" }
         require(archive.profiles.size <= 200) { "Too many profiles" }
         require(archive.profiles.all { it.name.isNotBlank() && it.packageName.isNotBlank() }) {
             "Invalid profile name or target package"
@@ -91,7 +99,8 @@ private object SakuraProfilesStorage {
 fun SakuraProfilesScreen(
     selectionRepo: PatchSelectionRepository = koinInject(),
     optionsRepo: PatchOptionsRepository = koinInject(),
-    bundleRepo: PatchBundleRepository = koinInject()
+    bundleRepo: PatchBundleRepository = koinInject(),
+    database: AppDatabase = koinInject()
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -115,8 +124,17 @@ fun SakuraProfilesScreen(
                 val items = withContext(Dispatchers.IO) {
                     val input = context.contentResolver.openInputStream(uri)
                         ?: error("Unable to read selected document")
-                    val text = input.bufferedReader().use { it.readText() }
-                    SakuraProfilesStorage.parse(text)
+                    val text = input.bufferedReader().use { reader ->
+                        val chars = CharArray(1048577); var count = 0
+                        while (count < chars.size) { val n = reader.read(chars, count, chars.size - count); if (n < 0) break; count += n }
+                        require(count <= 1048576) { "Profile archive exceeds 1 MiB" }
+                        String(chars, 0, count)
+                    }
+                    SakuraProfilesStorage.parse(text).also { imported ->
+                        require(imported.all { it.sourceIdentities.keys.containsAll(it.selections.keys) }) {
+                            "Legacy profiles lack portable source identities. Re-export them from the migration bridge on the original installation."
+                        }
+                    }
                 }
                 val merged = (profiles + items).distinctBy { it.id }
                 withContext(Dispatchers.IO) { SakuraProfilesStorage.save(context, merged) }
@@ -130,7 +148,19 @@ fun SakuraProfilesScreen(
             try {
                 withContext(Dispatchers.IO) {
                     val output = context.contentResolver.openOutputStream(uri) ?: error("Unable to save file")
-                    output.bufferedWriter().use { it.write(SakuraProfilesStorage.serialize(profiles)) }
+                    val sources = bundleRepo.sources.first()
+                    val metadata = bundleRepo.allBundlesInfoFlow.first()
+                    val portable = profiles.map { profile ->
+                        val identities = profile.selections.keys.associateWith { uid ->
+                            profile.sourceIdentities[uid] ?: run {
+                                val source = sources.singleOrNull { it.uid == uid } ?: error("Load the original source before exporting this legacy profile")
+                                require(profile.sourceNames[uid] == null || profile.sourceNames[uid] == metadata[uid]?.name) { "Legacy source changed; recreate this profile before exporting" }
+                                BuildWorkspace.sourceIdentity(source)
+                            }
+                        }
+                        profile.copy(sourceIdentities = identities, sourceVersions = profile.sourceVersions + profile.selections.keys.associateWith { metadata[it]?.version })
+                    }
+                    output.bufferedWriter().use { it.write(SakuraProfilesStorage.serialize(portable)) }
                 }
                 status = "Exported " + profiles.size + " profiles"
             } catch (e: Exception) { status = "Export failed: " + (e.message ?: "Unknown error") }
@@ -140,7 +170,7 @@ fun SakuraProfilesScreen(
     confirmDelete?.let { profile ->
         AlertDialog(
             onDismissRequest = { confirmDelete = null },
-            title = { Text("Delete saved profile?") },
+            title = { Text(stringResource(R.string.sakura_ui_delete_saved_profile)) },
             text = { Text("Remove " + profile.name + "? Your active patch selections are not affected.") },
             confirmButton = {
                 TextButton(onClick = {
@@ -153,31 +183,55 @@ fun SakuraProfilesScreen(
                             status = "Profile deleted"
                         } catch (e: Exception) { status = e.message ?: "Delete failed" }
                     }
-                }) { Text("Delete") }
+                }) { Text(stringResource(R.string.sakura_ui_delete)) }
             },
-            dismissButton = { TextButton(onClick = { confirmDelete = null }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { confirmDelete = null }) { Text(stringResource(R.string.sakura_ui_cancel)) } }
         )
     }
 
     confirmApply?.let { profile ->
+        var preview by remember(profile.id) { mutableStateOf<String?>(null) }
+        LaunchedEffect(profile.id) {
+            preview = withContext(Dispatchers.IO) {
+                runCatching {
+                    val sources = bundleRepo.sources.first()
+                    val identities = sources.associate { it.uid to BuildWorkspace.sourceIdentity(it) }
+                    val metadata = bundleRepo.allBundlesInfoFlow.first()
+                    profile.selections.entries.joinToString("\n") { (uid, names) ->
+                        val mapped = profile.sourceIdentities[uid]?.let { resolveSourceIdentity(it, identities) } ?: uid
+                        val source = metadata[mapped] ?: error("Missing source: ${profile.sourceNames[uid] ?: uid}")
+                        val available = source.forPackage(profile.packageName, null).patches.map { it.name }.toSet()
+                        "${source.name}: ${names.size} patches; ${profile.sourceVersions[uid] ?: "unknown"} → ${source.version ?: "unknown"}" +
+                            if ((names - available).isEmpty()) "" else " — missing: ${(names - available).joinToString()}"
+                    }
+                }.getOrElse { it.message.orEmpty() }
+            }
+        }
         AlertDialog(
             onDismissRequest = { confirmApply = null },
             title = { Text("Restore " + profile.name + "?") },
-            text = { Text("The app's saved selections will change only if all patch sources and patch names are still available. Other apps stay untouched.") },
+            text = { Text((preview ?: "Checking sources…") + "\n\nSources and patch names are validated again before restoring. Selections and options are restored together. Legacy profiles without source identities can only be matched on their original installation.") },
             confirmButton = {
-                TextButton(onClick = {
+                TextButton(enabled = preview != null, onClick = {
                     confirmApply = null
                     scope.launch {
                         busy = true
                         try {
                             val outcome = withContext(Dispatchers.IO) {
                                 val available = bundleRepo.allBundlesInfoFlow.first()
+                                val sources = bundleRepo.sources.first()
+                                val identities = sources.associate { it.uid to BuildWorkspace.sourceIdentity(it) }
+                                val remap = profile.selections.keys.associateWith { oldUid ->
+                                    profile.sourceIdentities[oldUid]?.let { resolveSourceIdentity(it, identities) } ?: oldUid
+                                }
+                                require(remap.values.toSet().size == remap.size) { "Multiple saved sources resolve to the same source" }
                                 require(profile.selections.isNotEmpty()) { "No patch selections in this profile" }
                                 // Validate every source and selected patch before writing anything.
                                 val valid = profile.selections.mapValues { (uid, selected) ->
-                                    val bundle = available[uid] ?: error("Missing source ID " + uid)
+                                    val currentUid = remap.getValue(uid)
+                                    val bundle = available[currentUid] ?: error("Missing source ID " + uid)
                                     val nameAtSave = profile.sourceNames[uid]
-                                    require(nameAtSave == null || nameAtSave == bundle.name) {
+                                    require(profile.sourceIdentities.containsKey(uid) || nameAtSave == null || nameAtSave == bundle.name) {
                                         "Source ID " + uid + " now points to a different repository"
                                     }
                                     val patchNames = bundle.forPackage(profile.packageName, null).patches
@@ -188,15 +242,17 @@ fun SakuraProfilesScreen(
                                     }
                                     selected.toSet()
                                 }
-                                selectionRepo.updateSelection(profile.packageName, valid, scope = valid.keys)
+                                database.withTransaction {
+                                selectionRepo.updateSelection(profile.packageName, valid.mapKeys { remap.getValue(it.key) }, scope = remap.values.toSet())
                                 if (includeOptions) {
                                     for ((uid, raw) in profile.options) {
                                         if (uid !in valid) continue
                                         optionsRepo.importOptionsForBundle(
-                                            profile.packageName, uid,
+                                            profile.packageName, remap.getValue(uid),
                                             raw.filterKeys { it in valid[uid].orEmpty() }
                                         )
                                     }
+                                }
                                 }
                                 "Restored selections for " + profile.packageName + ". Review options before patching."
                             }
@@ -205,9 +261,9 @@ fun SakuraProfilesScreen(
                             status = "Restore cancelled: " + (e.message ?: "Unknown error")
                         } finally { busy = false }
                     }
-                }) { Text("Restore") }
+                }) { Text(stringResource(R.string.sakura_ui_restore)) }
             },
-            dismissButton = { TextButton(onClick = { confirmApply = null }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { confirmApply = null }) { Text(stringResource(R.string.sakura_ui_cancel)) } }
         )
     }
 
@@ -219,11 +275,11 @@ fun SakuraProfilesScreen(
             style = MaterialTheme.typography.bodySmall)
         OutlinedTextField(
             value = title, onValueChange = { title = it.take(80) },
-            label = { Text("Profile name") }, modifier = Modifier.fillMaxWidth(), singleLine = true
+            label = { Text(stringResource(R.string.sakura_ui_profile_name)) }, modifier = Modifier.fillMaxWidth(), singleLine = true
         )
         OutlinedTextField(
             value = target, onValueChange = { target = it.trim().take(255) },
-            label = { Text("Target package ID") }, modifier = Modifier.fillMaxWidth(), singleLine = true
+            label = { Text(stringResource(R.string.sakura_ui_target_package_id)) }, modifier = Modifier.fillMaxWidth(), singleLine = true
         )
         Button(
             enabled = !busy && title.isNotBlank() && target.isNotBlank(),
@@ -235,6 +291,7 @@ fun SakuraProfilesScreen(
                             val active = selectionRepo.getAllSelectionsForPackage(target)
                             require(active.isNotEmpty()) { "This app has no saved patch selections" }
                             val sources = bundleRepo.allBundlesInfoFlow.first()
+                            val sourceFiles = bundleRepo.sources.first()
                             SakuraProfile(
                                 id = UUID.randomUUID().toString(),
                                 name = title.trim(), packageName = target,
@@ -245,7 +302,9 @@ fun SakuraProfilesScreen(
                                 },
                                 sourceNames = active.keys.mapNotNull { uid ->
                                     sources[uid]?.name?.let { uid to it }
-                                }.toMap()
+                                }.toMap(),
+                                sourceIdentities = active.keys.associateWith { uid -> BuildWorkspace.sourceIdentity(sourceFiles.single { it.uid == uid }) },
+                                sourceVersions = active.keys.associateWith { uid -> sources[uid]?.version }
                             )
                         }
                         val next = profiles + snapshot
@@ -257,14 +316,14 @@ fun SakuraProfilesScreen(
                     finally { busy = false }
                 }
             }
-        ) { Text("Save current patch configuration") }
+        ) { Text(stringResource(R.string.sakura_ui_save_current_patch_configuration)) }
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick = { importLauncher.launch(arrayOf("application/json", "text/plain")) }, enabled = !busy) {
-                Text("Import JSON")
+                Text(stringResource(R.string.sakura_ui_import_json))
             }
             OutlinedButton(onClick = { exportLauncher.launch("sakura-profiles.json") },
-                enabled = !busy && profiles.isNotEmpty()) { Text("Export JSON") }
+                enabled = !busy && profiles.isNotEmpty()) { Text(stringResource(R.string.sakura_ui_export_json)) }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Checkbox(checked = includeOptions, onCheckedChange = { includeOptions = it })
@@ -275,7 +334,7 @@ fun SakuraProfilesScreen(
             color = MaterialTheme.colorScheme.primary)
         HorizontalDivider()
         Text("Profiles (" + profiles.size + ")", style = MaterialTheme.typography.titleMedium)
-        if (profiles.isEmpty()) Text("No saved profiles yet. Choose patches, then save a named snapshot.")
+        if (profiles.isEmpty()) Text(stringResource(R.string.sakura_ui_no_saved_profiles_yet_choose_patches_then_save_a_named_snapshot))
         profiles.sortedByDescending { it.savedAt }.forEach { profile ->
             Card {
                 Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -285,8 +344,8 @@ fun SakuraProfilesScreen(
                         " patches from " + profile.selections.size + " sources",
                         style = MaterialTheme.typography.bodySmall)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TextButton(onClick = { confirmApply = profile }, enabled = !busy) { Text("Restore") }
-                        TextButton(onClick = { confirmDelete = profile }, enabled = !busy) { Text("Delete") }
+                        TextButton(onClick = { confirmApply = profile }, enabled = !busy) { Text(stringResource(R.string.sakura_ui_restore)) }
+                        TextButton(onClick = { confirmDelete = profile }, enabled = !busy) { Text(stringResource(R.string.sakura_ui_delete)) }
                     }
                 }
             }
