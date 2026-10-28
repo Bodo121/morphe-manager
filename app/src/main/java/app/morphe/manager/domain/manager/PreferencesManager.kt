@@ -350,6 +350,11 @@ class PreferencesManager(
         val patcherCompletionSound: Boolean? = null,
         val patcherSuccessSoundUri: String? = null,
         val patcherErrorSoundUri: String? = null,
+        val sakuraReduceMotion: Boolean? = null,
+        val sakuraPauseEffects: Boolean? = null,
+        val sakuraPerformanceMode: SakuraPerformanceMode? = null,
+        val allowCrossPackagePatches: Boolean? = null,
+        val sakuraGreetingName: String? = null,
         val homeAppButtons: HomeAppButtonSnapshot? = null
     ) {
         /**
@@ -364,6 +369,11 @@ class PreferencesManager(
             val updates = SettingsSection.UPDATES in sections
             val sources = SettingsSection.SOURCES in sections
             return SettingsSnapshot(
+                sakuraReduceMotion = sakuraReduceMotion.takeIf { appearance },
+                sakuraPauseEffects = sakuraPauseEffects.takeIf { appearance },
+                sakuraPerformanceMode = sakuraPerformanceMode.takeIf { patching },
+                allowCrossPackagePatches = allowCrossPackagePatches.takeIf { patching },
+                sakuraGreetingName = sakuraGreetingName.takeIf { home },
                 dynamicColor = dynamicColor.takeIf { appearance },
                 pureBlackTheme = pureBlackTheme.takeIf { appearance },
                 colorAccents = colorAccents.takeIf { appearance },
@@ -425,6 +435,11 @@ class PreferencesManager(
     }
 
     suspend fun exportSettings() = SettingsSnapshot(
+        sakuraGreetingName = sakuraGreetingName.get(),
+        allowCrossPackagePatches = allowCrossPackagePatches.get(),
+        sakuraPerformanceMode = sakuraPerformanceMode.get(),
+        sakuraPauseEffects = sakuraPauseEffects.get(),
+        sakuraReduceMotion = sakuraReduceMotion.get(),
         dynamicColor = themeStyle.get() == ThemeStyle.MATERIAL_YOU,
         pureBlackTheme = pureBlackTheme.get(),
         colorAccents = colorAccents.get(),
@@ -478,6 +493,11 @@ class PreferencesManager(
     )
 
     suspend fun importSettings(snapshot: SettingsSnapshot) = edit {
+        snapshot.sakuraGreetingName?.let { sakuraGreetingName.value = it }
+        snapshot.allowCrossPackagePatches?.let { allowCrossPackagePatches.value = it }
+        snapshot.sakuraPerformanceMode?.let { sakuraPerformanceMode.value = it }
+        snapshot.sakuraPauseEffects?.let { sakuraPauseEffects.value = it }
+        snapshot.sakuraReduceMotion?.let { sakuraReduceMotion.value = it }
         snapshot.pureBlackTheme?.let { pureBlackTheme.value = it }
         snapshot.colorAccents?.let { colorAccents.value = it }
         snapshot.outlines?.let { outlines.value = it }

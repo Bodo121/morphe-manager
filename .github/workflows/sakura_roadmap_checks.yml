@@ -24,7 +24,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           chmod +x gradlew
-          ./gradlew :app:compileReleaseKotlin :app:testReleaseUnitTest --tests 'app.morphe.manager.domain.workspace.*' --stacktrace --console=plain
+          ./gradlew :app:compileReleaseKotlin --stacktrace --console=plain
+          ./gradlew :app:testDebugUnitTest --tests 'app.morphe.manager.domain.workspace.*' --stacktrace --console=plain
           ./gradlew :patcher-core:test --stacktrace --console=plain
       - uses: actions/upload-artifact@v4
         if: always()

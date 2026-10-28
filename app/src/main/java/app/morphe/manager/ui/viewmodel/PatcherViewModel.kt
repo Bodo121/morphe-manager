@@ -11,6 +11,7 @@
 package app.morphe.manager.ui.viewmodel
 
 import android.app.Application
+import app.morphe.manager.domain.workspace.patchFailureAdvice
 import android.content.Intent
 import android.content.pm.PackageInfo
 import android.net.Uri
@@ -501,7 +502,7 @@ class PatcherViewModel(
      * the patching log, so the user always has something to act on.
      */
     val failureDetails: String
-        get() = failureMessage.ifBlank {
+        get() = patchFailureAdvice(failureMessage.ifBlank { patchRun.logs.joinToString { it.second } }) + "\n\n" + failureMessage.ifBlank {
             patchRun.logs
                 .filterNot { (_, message) -> SummarisedLogPrefixes.any { message.startsWith(it) } }
                 .joinToString("\n") { (level, message) -> "[$level] $message" }
@@ -532,6 +533,14 @@ class PatcherViewModel(
 
     /** Notification and tour prompts raised after a successful install or export. */
     val postPatchPrompts = PostPatchPrompts(app, prefs, viewModelScope)
+
+    var readyToBuild by mutableStateOf(false)
+        private set
+    var runningDryRun by mutableStateOf(false)
+        private set
+    var previewResult by mutableStateOf<String?>(null)
+        private set
+    private var reviewedOptions: Options = emptyMap()
 
     init {
         restoreOutcome()
@@ -653,13 +662,6 @@ class PatcherViewModel(
         return false
     }
 
-    var readyToBuild by mutableStateOf(false)
-        private set
-    var runningDryRun by mutableStateOf(false)
-        private set
-    var previewResult by mutableStateOf<String?>(null)
-        private set
-    private var reviewedOptions: Options = emptyMap()
     val readySummary: String get() = buildString {
         appendLine("$packageName · ${version ?: "unknown version"}")
         appendLine("${appliedSelection.values.sumOf { it.size }} patches from ${patchSourcesForLog.size} sources")
