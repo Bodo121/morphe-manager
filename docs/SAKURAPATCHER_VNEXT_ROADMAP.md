@@ -99,3 +99,12 @@ The following are source-code changes, **not yet an end-to-end validated release
 - [x] Unit tests remain available only through **Actions → SakuraPatcher manual unit-test diagnostics → Run workflow**, with test progress reporting and an enforced timeout.
 
 **Not implemented by this follow-up:** bytecode fingerprint matching/automatic porting, dedicated named patch profiles, true decoded DEX/resource diffs, automated retry conflict isolation, rollback, full Eco/Balanced/Maximum patch engine modes, pixel-by-pixel reference screenshot verification. These remain roadmap scope and are not to be represented as finished functionality.
+
+## Startup stability and crash recovery
+
+- [x] A local-only uncaught exception reporter records Android stack traces without telemetry.
+- [x] A native Android-View recovery screen appears after a recent crash, with buttons to copy the stack trace and retry normal/reduced UI. It does not delete app data or patch selections.
+- [x] The home navigation uses Material3 Scaffold instead of embedding NavigationBar inside a custom floating SubcomposeLayout, reducing risky constraints interactions.
+- [x] Safe UI mode hides experimental Patcher/PatchLab tabs and the redesigned Home dashboard while keeping regular app/source/settings flows.
+- [x] Normal app-card solid colors return a stable three-stop palette to preserve downstream assumptions.
+- [ ] Determine the **actual device crash stack trace** and verify launch on HyperOS and a clean Android emulator; the changes above are preventative and diagnostic, not proof of a fixed root cause.

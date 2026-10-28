@@ -15,6 +15,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import app.morphe.manager.SakuraCrashRecovery
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Rect
@@ -87,7 +89,11 @@ fun MainPagerScaffold(
     }
     BackHandler(enabled = current != MainPage.APPS) { select(MainPage.APPS) }
 
-    val items = MainPage.entries.map { target ->
+    val reducedUi = SakuraCrashRecovery.safeMode(LocalContext.current)
+    val visiblePages = if (reducedUi) {
+        listOf(MainPage.APPS, MainPage.SOURCES, MainPage.SETTINGS)
+    } else MainPage.entries
+    val items = visiblePages.map { target ->
         MainNavItem(
             page = target,
             icon = if (target == MainPage.SETTINGS) settingsIcon else target.icon,
@@ -130,27 +136,35 @@ fun MainPagerScaffold(
                 pager(Modifier.weight(1f).fillMaxHeight(), sidebarFocus, 0.dp)
             }
         } else {
-            FloatingBarsLayout(
+            // Material3's NavigationBar owns its own window insets. Scaffold keeps it
+            // separate from the pager, avoiding floating-bar measurement/focus conflicts.
+            Scaffold(
                 modifier = Modifier.fillMaxSize(),
+                contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                containerColor = MaterialTheme.colorScheme.background,
                 bottomBar = {
-                    NavigationBar(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                        tonalElevation = 0.dp
-                    ) {
-                        items.forEach { item ->
-                            NavigationBarItem(
-                                selected = item.page == current,
-                                onClick = { select(item.page) },
-                                icon = { Icon(item.icon, contentDescription = null) },
-                                label = { Text(item.label, maxLines = 1) },
-                                alwaysShowLabel = true,
-                                modifier = item.modifier
-                            )
+                    if (!navigationCovered) {
+                        NavigationBar(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                            tonalElevation = 0.dp
+                        ) {
+                            items.forEach { item ->
+                                NavigationBarItem(
+                                    selected = item.page == current,
+                                    onClick = { select(item.page) },
+                                    icon = { Icon(item.icon, contentDescription = null) },
+                                    label = { Text(item.label, maxLines = 1) },
+                                    alwaysShowLabel = true,
+                                    modifier = item.modifier
+                                )
+                            }
                         }
                     }
                 }
-            ) { _, bottomBarHeight ->
-                pager(Modifier.fillMaxSize(), null, bottomBarHeight)
+            ) { padding ->
+                // The content is measured above navigation, so children need no
+                // additional floating-bar bottom inset.
+                pager(Modifier.fillMaxSize().padding(padding), null, 0.dp)
             }
         }
     }

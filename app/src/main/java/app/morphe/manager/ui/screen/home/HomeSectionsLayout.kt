@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.platform.LocalContext
+import app.morphe.manager.SakuraCrashRecovery
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -150,16 +152,23 @@ internal fun SectionsLayout(
     }
 
     // Opens the list rather than sitting over it, so it scrolls away with the cards
-    val greeting: @Composable () -> Unit = {
-        SakuraHomeOverview(
-            patchedApps = apps.visible.count { it.installedApp != null },
-            availableApps = apps.visible.size,
-            onSelectApk = chromeActions.onOtherAppsClick,
-            onPatchLab = chromeActions.onOpenPatchLab,
-            onSources = chromeActions.onOpenSources,
-            onSelections = chromeActions.onOpenSelections,
-            greeting = greetingMessage
-        )
+    val reducedUi = SakuraCrashRecovery.safeMode(LocalContext.current)
+    val greeting: (@Composable () -> Unit)? = if (reducedUi) {
+        greetingMessage?.let { message ->
+            { GreetingSection(message = message, onRefresh = chromeActions.onRefreshGreeting) }
+        }
+    } else {
+        {
+            SakuraHomeOverview(
+                patchedApps = apps.visible.count { it.installedApp != null },
+                availableApps = apps.visible.size,
+                onSelectApk = chromeActions.onOtherAppsClick,
+                onPatchLab = chromeActions.onOpenPatchLab,
+                onSources = chromeActions.onOpenSources,
+                onSelections = chromeActions.onOpenSelections,
+                greeting = greetingMessage
+            )
+        }
     }
 
     PinnedHeaderPage(

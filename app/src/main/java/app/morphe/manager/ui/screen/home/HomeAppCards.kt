@@ -83,7 +83,7 @@ private data class HomeAppCardStyle(
      * result stays per-app even when the rest of the gradient is fixed.
      */
     fun cardColors(bundleColors: List<Color>): List<Color> =
-        colorResolver?.resolve(bundleColors) ?: listOf(cardColor)
+        colorResolver?.resolve(bundleColors) ?: List(3) { cardColor }
 
     /**
      * This style adjusted to the gradient it will be drawn on. White reads on the colors a bundle

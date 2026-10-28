@@ -109,6 +109,8 @@ class ManagerApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // Capture startup/Compose crashes before the app's dependency graph is initialized.
+        SakuraCrashRecovery.install(this)
 
         // The patcher process only hosts the run, none of the app is of use to it
         if (currentProcessName() != packageName) return

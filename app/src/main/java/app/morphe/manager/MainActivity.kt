@@ -126,6 +126,13 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         installSplashScreen()
 
+        // A native recovery view must be available even if the Compose theme or the
+        // five-page manager fails before it can draw a frame.
+        SakuraCrashRecovery.recentCrash(this)?.let { report ->
+            showSakuraLaunchRecovery(this, report)
+            return
+        }
+
         // Android 13+ recreates the activity by itself when the app language changes
         if (!AppLocale.appliedBySystem) {
             lifecycleScope.launch {
