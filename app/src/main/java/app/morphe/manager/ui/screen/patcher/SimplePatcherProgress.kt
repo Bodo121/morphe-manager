@@ -6,8 +6,7 @@
 package app.morphe.manager.ui.screen.patcher
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -171,7 +170,7 @@ private fun AdaptiveProgressContent(
                     completed = completed,
                     total = total,
                     accentColor = accentColor,
-                    modifier = Modifier.size(280.dp)
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         }
@@ -193,7 +192,7 @@ private fun AdaptiveProgressContent(
                 completed = completed,
                 total = total,
                 accentColor = accentColor,
-                modifier = Modifier.size(280.dp)
+                modifier = Modifier.fillMaxWidth()
             )
 
             ProgressDetailsSection(
@@ -213,7 +212,7 @@ private fun ProgressMessageSection(currentMessage: Int) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(120.dp),
+            .height(48.dp),
         contentAlignment = Alignment.Center
     ) {
         AnimatedMessage(currentMessage)
@@ -275,7 +274,7 @@ private fun AnimatedMessage(messageResId: Int) {
 }
 
 /**
- * Wavy circular progress indicator with percentage and patch count.
+ * Sakura's compact progress card. Real engine percentage, not simulated stages.
  */
 @Composable
 private fun CircularProgressWithStats(
@@ -285,50 +284,55 @@ private fun CircularProgressWithStats(
     accentColor: Color?,
     modifier: Modifier = Modifier
 ) {
-    // The eased progress moves every frame, so only the whole percent is read while composing
-    val percent by remember(progress) { derivedStateOf { (progress() * 100).toInt() } }
-
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier
-    ) {
-        androidx.compose.material3.CircularProgressIndicator(
-            progress = progress,
-            modifier = Modifier.fillMaxSize(),
-            color = accentColor ?: MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.surfaceVariant,
-            strokeWidth = 8.dp
+    val percent by remember(progress) {
+        derivedStateOf { (progress().coerceIn(0f, 1f) * 100).toInt() }
+    }
+    Card(
+        modifier = modifier,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp, MaterialTheme.colorScheme.outlineVariant
+        ),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
         )
-
-        // Stats in center
+    ) {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Text(
-                text = stringResource(R.string.patcher_percentage, percent),
-                style = MaterialTheme.typography.displayLarge,
-                fontWeight = FontWeight.Bold,
-                fontSize = 56.sp,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-
-            Spacer(Modifier.height(Defaults.SpaceSmall))
-
-            val totalPatchesText = pluralStringResource(
-                R.plurals.patch_count,
-                total,
-                total.toString()
-            )
-
-            Text(
-                text = stringResource(
-                    R.string.patcher_patches_progress_format,
-                    completed,
-                    totalPatchesText
-                ),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column {
+                    Text(
+                        "Compilation in progress",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    val totalText = pluralStringResource(
+                        R.plurals.patch_count, total, total.toString()
+                    )
+                    Text(
+                        stringResource(R.string.patcher_patches_progress_format, completed, totalText),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                Text(
+                    stringResource(R.string.patcher_percentage, percent),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = accentColor ?: MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            LinearProgressIndicator(
+                progress = progress,
+                modifier = Modifier.fillMaxWidth().height(8.dp),
+                color = accentColor ?: MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
             )
         }
     }
