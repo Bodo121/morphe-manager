@@ -94,7 +94,9 @@ sealed class PatchBundleInfo {
                 if (appIconColor == null) appIconColor = patch.appIconColorFor(compatibilityPackage)
                 if (apkFileType == null) apkFileType = patch.apkFileTypeFor(compatibilityPackage)
                 if (displayName == null) displayName = patch.displayNameFor(compatibilityPackage)
-                if (compatibilityPackage == packageName) patch.signaturesFor(packageName) else null?.let { signaturesAcc.addAll(it) }
+                if (compatibilityPackage == packageName) {
+                    patch.signaturesFor(packageName)?.let { signaturesAcc.addAll(it) }
+                }
             }
 
             return Scoped(
