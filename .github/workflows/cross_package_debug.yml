@@ -1,0 +1,40 @@
+name: Build experimental cross-package APK
+
+on:
+  push:
+    branches:
+      - feature/cross-package-patches
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  debug-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            17
+            21
+      - name: Configure Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Compile debug APK
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          _JAVA_OPTIONS: -Djava.awt.headless=true
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :app:assembleDebug --stacktrace
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: morphe-cross-package-debug
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
