@@ -166,12 +166,9 @@ class PatchBundleRepository(
             .stateIn(scope, SharingStarted.Eagerly, emptyMap())
 
     fun scopedBundleInfoFlow(packageName: String, version: String?, versionCode: Long? = null) =
-        combine(enabledBundlesInfoFlow, prefs.crossPackageTarget.flow, prefs.crossPackageSource.flow) { bundles, target, source ->
-            val patchPackage = source.trim().takeIf {
-                packageName == target.trim() && it.isNotEmpty()
-            } ?: packageName
-            bundles.map { (_, bundleInfo) ->
-                bundleInfo.forPackage(packageName, version, versionCode, patchPackage)
+        combine(enabledBundlesInfoFlow, prefs.allowCrossPackagePatches.flow) { bundles, enabled ->
+            bundles.map { (_, info) ->
+                info.forPackage(packageName, version, versionCode, allowAllPackages = enabled)
             }
         }
 
