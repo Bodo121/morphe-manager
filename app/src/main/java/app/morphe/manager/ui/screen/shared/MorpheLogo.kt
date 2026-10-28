@@ -63,12 +63,12 @@ fun MorpheWordmark(
         Image(
             painter = rememberAppCompatPainter(R.drawable.sakura_app_icon),
             contentDescription = null,
-            modifier = Modifier.size(38.dp)
+            modifier = Modifier.size(30.dp)
         )
         Text(
             text = "SakuraPatcher",
             color = textColor,
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.titleMedium,
             maxLines = 1
         )
     }
