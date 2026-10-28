@@ -31,9 +31,9 @@ internal fun SakuraHomeOverview(
     val scheme = MaterialTheme.colorScheme
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text("Your patching workspace", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            Text(greeting?.takeIf { it.isNotBlank() } ?: "Everything you need, without the clutter.",
-                style = MaterialTheme.typography.bodyMedium, color = scheme.onSurfaceVariant)
+            Text("SakuraPatcher", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(greeting?.takeIf { it.isNotBlank() } ?: "Morphe engine · Sakura Core",
+                style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
         }
         Card(
             colors = CardDefaults.cardColors(containerColor = scheme.primaryContainer),
@@ -43,8 +43,8 @@ internal fun SakuraHomeOverview(
             Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     Text("Sakura Core", color = scheme.primary, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
-                    Text("Ready to patch", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Text("Choose a file or select an installed app below.",
+                    Text("Patch your apps", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text("Choose an installed app below or open an APK from storage.",
                         style = MaterialTheme.typography.bodySmall, color = scheme.onPrimaryContainer)
                 }
                 Button(onClick = onSelectApk) { Text("Select APK") }
@@ -55,18 +55,18 @@ internal fun SakuraHomeOverview(
             SakuraMetric(availableApps.toString(), "Available apps", Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            SakuraQuickAction("APK Patcher", "Open a local APK", MaterialSymbols.Rounded.Auto_fix_high,
+            SakuraQuickAction("Select APK to Patch", "Installed or storage file", MaterialSymbols.Rounded.Auto_fix_high,
                 onSelectApk, Modifier.weight(1f))
-            SakuraQuickAction("PatchLab", "Inspect and compare", MaterialSymbols.Rounded.Tune,
+            SakuraQuickAction("Sakura PatchLab", "Bytecode structure diagnostics", MaterialSymbols.Rounded.Tune,
                 onPatchLab, Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            SakuraQuickAction("Patch sources", "Manage bundles", MaterialSymbols.Rounded.Folder_code,
+            SakuraQuickAction("Patch Sources", "Manage patch bundles", MaterialSymbols.Rounded.Folder_code,
                 onSources, Modifier.weight(1f))
             SakuraQuickAction("Patch profiles", "Save and restore choices", MaterialSymbols.Rounded.Apps,
                 onSelections, Modifier.weight(1f))
         }
-        Text("APPLICATIONS", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
+        Text("INSTALLED AND AVAILABLE APPS", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
             color = scheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
     }
 }

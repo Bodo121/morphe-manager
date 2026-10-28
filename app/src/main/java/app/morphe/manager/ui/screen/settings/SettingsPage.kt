@@ -9,10 +9,14 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import app.morphe.manager.domain.manager.SakuraPerformanceMode
+import kotlinx.coroutines.launch
 import app.morphe.manager.R
 import app.morphe.manager.ui.screen.home.OnboardingState
 import app.morphe.manager.ui.screen.home.TourTarget
@@ -81,7 +85,10 @@ fun SettingsPage(
                             bottom = bottomBarHeight + Defaults.SpaceLarge
                         )
                 ) {
-                    if (!settingsSearch.isActive) SakuraThemePicker(settingsViewModel.prefs)
+                    if (!settingsSearch.isActive) {
+                        SakuraThemePicker(settingsViewModel.prefs)
+                        SakuraPerformancePicker(settingsViewModel.prefs)
+                    }
                     GeneralSection(navigation.openSubpage, onboardingState)
                     PatchingSection(settingsViewModel, navigation, onboardingState)
                     UpdatesSection(settingsViewModel, homeViewModel)
@@ -248,5 +255,44 @@ private fun SubpageMatches(
         ) {
             SettingsSubpageContent(subpage, homeViewModel, navigation)
         }
+    }
+}
+
+/**
+ * Uses real download concurrency + rate limits. Does not alter native patcher threads,
+ * heap allocation, or ABI behaviour, avoiding OOM regressions.
+ */
+@Composable
+private fun SakuraPerformancePicker(prefs: app.morphe.manager.domain.manager.PreferencesManager) {
+    val mode by prefs.sakuraPerformanceMode.getAsState()
+    val scope = rememberCoroutineScope()
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("PERFORMANCE", style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text("Source download strategy", style = MaterialTheme.typography.titleMedium)
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            SakuraPerformanceMode.entries.forEach { option ->
+                FilterChip(
+                    selected = mode == option,
+                    onClick = { scope.launch { prefs.sakuraPerformanceMode.update(option) } },
+                    label = { Text(option.name.lowercase().replaceFirstChar(Char::titlecase)) }
+                )
+            }
+        }
+        Text(
+            when (mode) {
+                SakuraPerformanceMode.ECO ->
+                    "One download at a time, fewer UI updates. Lowest concurrent memory and network usage."
+                SakuraPerformanceMode.BALANCED ->
+                    "Two parallel downloads, progress refreshed at most every 150 ms. Recommended."
+                SakuraPerformanceMode.MAXIMUM ->
+                    "Up to four parallel downloads; may use more memory. Not guaranteed to be faster."
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text("Applies to the next patch-source update, not the patcher CPU engine.",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

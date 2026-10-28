@@ -37,6 +37,20 @@ import kotlinx.serialization.Serializable
  * Parts of the manager settings a backup can carry or leave out. Each setting belongs to exactly
  * one, as [PreferencesManager.SettingsSnapshot.restrictedTo] spells out.
  */
+/**
+ * Sakura download workload profile. This intentionally tunes source downloads and UI
+ * progress dispatch, NOT patcher/D8/R8 worker threads or Java heap sizes.
+ * More concurrent downloads are not guaranteed to complete faster.
+ */
+enum class SakuraPerformanceMode(
+    val parallelDownloads: Int,
+    val progressIntervalMs: Long
+) {
+    ECO(1, 300L),
+    BALANCED(2, 150L),
+    MAXIMUM(4, 100L)
+}
+
 enum class SettingsSection {
     APPEARANCE,
     HOME,
@@ -98,6 +112,9 @@ class PreferencesManager(
 
     // Experimental: choose which package's patch metadata to use for another APK.
     val allowCrossPackagePatches = booleanPreference("allow_cross_package_patches", false)
+
+    /** Real source-download concurrency and progress dispatch policy. */
+    val sakuraPerformanceMode = enumPreference("sakura_performance_mode", SakuraPerformanceMode.BALANCED)
 
     /** Remember the last batch installation policy for the next new queue. */
     val batchInstallWhenFinished = booleanPreference("batch_install_when_finished", false)

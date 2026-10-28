@@ -9,6 +9,11 @@ import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material3.*
@@ -144,19 +149,56 @@ fun MainPagerScaffold(
                 containerColor = MaterialTheme.colorScheme.background,
                 bottomBar = {
                     if (!navigationCovered) {
-                        NavigationBar(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                            tonalElevation = 0.dp
+                        // The React reference uses a 64dp tall, five-item bottom bar,
+                        // a 56×32dp active indicator and 11sp labels.
+                        Column(
+                            modifier = Modifier.fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.surfaceContainer)
                         ) {
-                            items.forEach { item ->
-                                NavigationBarItem(
-                                    selected = item.page == current,
-                                    onClick = { select(item.page) },
-                                    icon = { Icon(item.icon, contentDescription = null) },
-                                    label = { Text(item.label, maxLines = 1) },
-                                    alwaysShowLabel = true,
-                                    modifier = item.modifier
-                                )
+                            HorizontalDivider(
+                                thickness = 1.dp,
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .65f)
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth().navigationBarsPadding().height(64.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                items.forEach { item ->
+                                    val selected = item.page == current
+                                    val ink = if (selected) MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.onSurfaceVariant
+                                    Column(
+                                        modifier = item.modifier
+                                            .weight(1f)
+                                            .fillMaxHeight()
+                                            .clickable(role = Role.Tab, onClick = { select(item.page) }),
+                                        verticalArrangement = Arrangement.Center,
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Box(
+                                            modifier = Modifier.size(width = 56.dp, height = 32.dp)
+                                                .background(
+                                                    if (selected) MaterialTheme.colorScheme.primary.copy(alpha = .15f)
+                                                    else Color.Transparent,
+                                                    RoundedCornerShape(percent = 50)
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                item.icon,
+                                                contentDescription = item.contentDescription ?: item.label,
+                                                tint = ink,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                        Text(
+                                            item.label,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = ink,
+                                            maxLines = 1
+                                        )
+                                    }
+                                }
                             }
                         }
                     }

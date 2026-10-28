@@ -12,6 +12,7 @@ package app.morphe.manager.domain.repository
 
 import android.app.Application
 import android.content.Context
+import android.os.SystemClock
 import android.database.SQLException
 import android.util.Log
 import androidx.annotation.StringRes
@@ -60,6 +61,7 @@ import java.security.MessageDigest
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.time.Duration.Companion.seconds
 import app.morphe.manager.data.room.bundles.Source as SourceInfo
 
@@ -1932,9 +1934,16 @@ class PatchBundleRepository(
                 result = BundleUpdateResult.None,
             )
 
+            // Downloads were flooding the UI: each network chunk recomputed every source
+            // total and emitted a new StateFlow value, repeatedly invalidating Compose.
+            // All source bytes still advance; only UI snapshots are rate-limited.
+            val performanceMode = prefs.sakuraPerformanceMode.get()
             val bundleBytes = ConcurrentHashMap<Int, Pair<Long, Long?>>()
             val completedCount = AtomicInteger(0)
-            val downloadDispatcher = Dispatchers.IO.limitedParallelism(4)
+            val lastProgressPublishMs = AtomicLong(0L)
+            val downloadDispatcher = Dispatchers.IO.limitedParallelism(performanceMode.parallelDownloads)
+            val updateStartMs = SystemClock.elapsedRealtime()
+            Log.i(tag, "Sakura source update: ${targets.size} bundles, mode=$performanceMode")
 
             // Read snapshots below use toMutableList() rather than toList(): the latter's
             // size==1 fast path calls iterator().next() without a hasNext() guard, so
@@ -1960,6 +1969,11 @@ class PatchBundleRepository(
                                 val onProgress: PatchBundleDownloadProgress = { bytesRead, bytesTotal ->
                                     if (isRemoteUpdateCancelled(bundle.uid)) throw BundleUpdateCancelled()
                                     bundleBytes[bundle.uid] = bytesRead to bytesTotal
+                                    val now = SystemClock.elapsedRealtime()
+                                    val previous = lastProgressPublishMs.get()
+                                    if (now - previous < performanceMode.progressIntervalMs ||
+                                        !lastProgressPublishMs.compareAndSet(previous, now)
+                                    ) return@PatchBundleDownloadProgress
                                     val snapshot = bundleBytes.values.toList()
                                     val aggRead = snapshot.sumOf { it.first }
                                     val knownTotals = snapshot.mapNotNull { it.second }
@@ -1990,6 +2004,12 @@ class PatchBundleRepository(
                                 null
                             }
 
+                            // Flush the final snapshot for this source, including the
+                            // last bytes skipped by the UI throttle.
+                            val finalSnapshot = bundleBytes.values.toList()
+                            val finalRead = finalSnapshot.sumOf { it.first }
+                            val totals = finalSnapshot.mapNotNull { it.second }
+                            val finalTotal = if (totals.size == finalSnapshot.size) totals.sum() else null
                             val nextTotal = currentUpdateTotal(targets.size)
                             val newCompleted = completedCount.incrementAndGet().coerceAtMost(nextTotal)
                             activeNamesMap.remove(bundle.uid)
@@ -1997,6 +2017,8 @@ class PatchBundleRepository(
                             bundleUpdateProgressFlow.update { progress ->
                                 progress?.copy(
                                     completed = newCompleted,
+                                    bytesRead = finalRead,
+                                    bytesTotal = finalTotal,
                                     activeNames = stillActive.map { it.value },
                                     activeUids = stillActive.map { it.key },
                                 )
@@ -2029,6 +2051,7 @@ class PatchBundleRepository(
                 return@coroutineScope
             }
 
+            Log.i(tag, "Sakura source update finished in ${SystemClock.elapsedRealtime() - updateStartMs} ms; ${updated.size}/${targets.size} updated")
             if (updated.isEmpty()) {
                 if (showMessage) messages.showIfInForeground(R.string.sources_update_unavailable)
                 if (!request.reportUpToDate) {
