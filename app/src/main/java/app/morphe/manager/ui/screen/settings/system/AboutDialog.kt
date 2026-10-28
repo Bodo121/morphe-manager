@@ -103,7 +103,7 @@ fun DialogHostScope.AboutDialog(
             ) {
                 val icon = rememberDrawablePainter(
                     drawable = remember {
-                        AppCompatResources.getDrawable(context, R.mipmap.ic_launcher_default)
+                        AppCompatResources.getDrawable(context, R.drawable.sakura_app_icon)
                     }
                 )
                 Image(

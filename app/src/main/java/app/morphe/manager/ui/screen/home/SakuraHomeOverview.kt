@@ -55,10 +55,10 @@ internal fun SakuraHomeOverview(
         } else greeting?.takeIf { it.isNotBlank() } ?: "Morphe engine · Sakura Core"
     }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text("SakuraPatcher", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            Text(displayGreeting,
-                style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
+        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Text(displayGreeting, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text("Your patching workspace",
+                style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
         }
         Card(
             colors = CardDefaults.cardColors(containerColor = scheme.primaryContainer),
@@ -72,7 +72,7 @@ internal fun SakuraHomeOverview(
                     Text("Choose an installed app below or open an APK from storage.",
                         style = MaterialTheme.typography.bodySmall, color = scheme.onPrimaryContainer)
                 }
-                Button(onClick = onSelectApk) { Text("Select APK") }
+                Button(onClick = onSelectApk, modifier = Modifier.heightIn(min = 48.dp)) { Text("Select APK") }
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

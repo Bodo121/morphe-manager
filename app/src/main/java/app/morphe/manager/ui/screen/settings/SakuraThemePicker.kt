@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import app.morphe.manager.domain.manager.PreferencesManager
 import app.morphe.manager.ui.theme.Theme
+import app.morphe.manager.ui.theme.ThemeStyle
 import kotlinx.coroutines.launch
 
 /** Native Light / Dark / System preference from the imported Sakura settings design. */
@@ -32,8 +33,14 @@ internal fun SakuraThemePicker(prefs: PreferencesManager) {
             ).forEach { (mode, label) ->
                 val selected = theme == mode
                 Card(
-                    onClick = { scope.launch { prefs.theme.update(mode) } },
-                    modifier = Modifier.weight(1f).heightIn(min = 62.dp),
+                    onClick = {
+                        scope.launch {
+                            prefs.theme.update(mode)
+                            // Explicit Sakura selection opts out of wallpaper-derived green.
+                            prefs.themeStyle.update(ThemeStyle.MORPHE)
+                        }
+                    },
+                    modifier = Modifier.weight(1f).heightIn(min = 54.dp),
                     shape = RoundedCornerShape(14.dp),
                     border = BorderStroke(1.dp, if (selected) scheme.primary else scheme.outlineVariant),
                     colors = CardDefaults.cardColors(

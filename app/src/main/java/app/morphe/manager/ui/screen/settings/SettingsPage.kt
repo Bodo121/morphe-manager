@@ -60,8 +60,8 @@ fun SettingsPage(
     PinnedHeaderPage(
         header = {
             PageHeader(
-                title = "Sakura Settings",
-                subtitle = "Appearance • Patching • Performance • System",
+                title = "Settings",
+                subtitle = "Your workspace, your preferences",
                 search = search,
                 searchLabel = searchLabel
             )

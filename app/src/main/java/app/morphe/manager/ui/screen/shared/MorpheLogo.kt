@@ -96,7 +96,7 @@ fun rememberMorpheLogoBitmap(): ImageBitmap? {
     val context = LocalContext.current
     return remember(context) {
         runCatching {
-            val drawable = AppCompatResources.getDrawable(context, R.drawable.ic_mpp) ?: return@runCatching null
+            val drawable = AppCompatResources.getDrawable(context, R.drawable.sakura_app_icon) ?: return@runCatching null
             val size = 96
             // The path spans nearly the full viewport, so inset it to Material's 20dp live area
             val inset = size / 24

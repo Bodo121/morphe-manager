@@ -320,9 +320,8 @@ fun SakuraPatchLabScreen(
     ) {
         Text("🌸 Sakura PatchLab", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Text(
-            "Local APK inspection, patch metadata compatibility and archive comparisons. " +
-                "Your existing patching and installation flows remain unchanged.",
-            style = MaterialTheme.typography.bodyMedium,
+            "Local APK diagnostics · Patch compatibility · Archive inspection",
+            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
@@ -351,13 +350,27 @@ fun SakuraPatchLabScreen(
         }
 
         if (primary == null) {
-            Card {
-                Text(
-                    "Choose a local standalone APK to inspect its package metadata, " +
-                        "patch compatibility, archive changes and SHA-256 fingerprint.",
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.bodyMedium
-                )
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+            ) {
+                Column(Modifier.fillMaxWidth().padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Ready for inspection", style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold)
+                    Text("Pick a standalone APK to display real on-device results. No upload or fake fingerprint confidence scores.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("DEX", "Manifest", "Permissions").forEach { label ->
+                            SuggestionChip(onClick = { primaryPicker.launch(arrayOf("*/*")) },
+                                label = { Text(label, style = MaterialTheme.typography.labelSmall) })
+                        }
+                    }
+                    Text("1  Choose APK    •    2  Analyze    •    3  Compare or export",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary)
+                }
             }
         }
 

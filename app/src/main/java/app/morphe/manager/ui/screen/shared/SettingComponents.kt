@@ -50,7 +50,7 @@ import com.composables.icons.materialsymbols.roundedfilled.*
  * the edge and controls, since filled ones read as a wash of color on a colored dialog.
  */
 @Composable
-fun cardFill(): Color = ThemeTraitsDefaults.surfaceColor(MaterialTheme.colorScheme.surfaceContainer)
+fun cardFill(): Color = ThemeTraitsDefaults.surfaceColor(MaterialTheme.colorScheme.surface)
 
 /**
  * Elevated card with proper Material 3 theming.
@@ -475,10 +475,13 @@ fun SettingsItem(
             modifier = modifier
         ) {
             IconTextRow(
-                modifier = Modifier.padding(Defaults.SpaceLarge),
-                leadingContent = leadingContent ?: icon?.let { { ThemedIcon(icon = it) } },
+                modifier = Modifier.padding(horizontal = Defaults.SpaceMedium, vertical = 11.dp)
+                    .heightIn(min = Defaults.MinTouchTarget),
+                leadingContent = leadingContent ?: icon?.let { { ThemedIcon(icon = it, size = 20.dp) } },
                 title = title,
+                titleStyle = MaterialTheme.typography.bodyMedium,
                 description = subtitle,
+                descriptionStyle = MaterialTheme.typography.bodySmall,
                 trailingContent = statusContent ?: trailingContent
             )
         }
@@ -632,7 +635,7 @@ internal fun SectionTitle(text: String, icon: ImageVector?, parent: String?, onC
 private fun SectionTitleText(text: String, color: Color) {
     Text(
         text = text,
-        style = MaterialTheme.typography.titleSmall,
+        style = MaterialTheme.typography.labelLarge,
         fontWeight = FontWeight.SemiBold,
         color = color,
         maxLines = 1,

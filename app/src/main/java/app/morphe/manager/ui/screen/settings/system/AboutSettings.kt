@@ -35,7 +35,6 @@ import org.koin.androidx.compose.koinViewModel
  */
 @Composable
 fun AboutGroup(onOpenSubpage: (SettingsSubpage) -> Unit) {
-    val logo = rememberMorpheLogoBitmap()
     var showAboutDialog by rememberSaveable { mutableStateOf(false) }
 
     DialogHost(visible = showAboutDialog) {
@@ -52,14 +51,8 @@ fun AboutGroup(onOpenSubpage: (SettingsSubpage) -> Unit) {
                 title = stringResource(R.string.app_name),
                 subtitle = stringResource(R.string.version) + " " + BuildConfig.VERSION_NAME.isolateLtr(),
                 leadingContent = {
-                    logo?.let {
-                        Icon(
-                            bitmap = it,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(Defaults.IconSize)
-                        )
-                    }
+                    // Reuse the actual Sakura icon; the old ic_mpp glyph was still used here.
+                    MorpheLauncherLogo(Modifier.size(Defaults.IconSize))
                 }
             )
             SubpageItem(SettingsSubpage.ABOUT, onOpenSubpage)

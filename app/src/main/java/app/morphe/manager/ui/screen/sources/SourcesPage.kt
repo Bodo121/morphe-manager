@@ -563,12 +563,11 @@ private fun SourcesPageContent(
                                         onDelete = { bundlesToDelete.value = listOf(bundle) }
                                     ),
                                     // Folded while reordering, so a card is dragged by its header alone
-                                    expanded = !state.isReordering && (isSingleDefaultBundle ||
-                                        bundle.uid in expandedBundleUids || (isTourRunning && isFirstCard)),
+                                    expanded = !state.isReordering &&
+                                        (bundle.uid in expandedBundleUids || (isTourRunning && isFirstCard)),
                                     onHeaderClick = when {
                                         state.isReordering -> null
                                         state.isSelecting -> toggleSelected
-                                        isSingleDefaultBundle -> null
                                         else -> toggleExpanded
                                     },
                                     // The tour holds the first card open for its own steps, and a lone
@@ -578,7 +577,7 @@ private fun SourcesPageContent(
                                     },
                                     isSelectionMode = state.isSelecting,
                                     isSelected = state.selection.contains(bundle.uid),
-                                    forceExpanded = isSingleDefaultBundle,
+                                    forceExpanded = isTourRunning && isFirstCard,
                                     isDragging = itemIsDragging,
                                     dragHandleModifier = if (state.isReordering) {
                                         Modifier.draggableHandle(
@@ -827,7 +826,7 @@ private fun BundleManagementCard(
 
     // Neutral fill for all, so the page reads as one list; a working source keeps its color on the edge
     // and controls, a disabled one drops it rather than turn red, which stays for an unusable source
-    val accentColor = usableAppAccent(rememberBundleAccent(bundle).takeIf { isEnabled && !isUnavailable })
+    val accentColor = if (isEnabled && !isUnavailable) MaterialTheme.colorScheme.primary else null
     val cardColor = when {
         isBlocked -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.15f)
         isUnavailable -> SemanticTone.Warning.container.copy(alpha = 0.15f)
@@ -865,11 +864,11 @@ private fun BundleManagementCard(
                 .fillMaxWidth()
                 .graphicsLayer { scaleX = scale; scaleY = scale },
             shape = RoundedCornerShape(Defaults.CornerLarge),
-            tonalElevation = if (isDragging) 8.dp else 3.dp,
+            tonalElevation = if (isDragging) 3.dp else 0.dp,
             color = animatedColor,
             // The fill is a blend of the card's own, which the theme has no content color paired with
             contentColor = MaterialTheme.colorScheme.onSurface,
-            border = CardBorder.of(animatedBorderColor)
+            border = CardBorder.of(animatedBorderColor.copy(alpha = 0.55f))
         ) {
             ProvideCardAccent(accentColor, cardColor) {
                 // Build content description
