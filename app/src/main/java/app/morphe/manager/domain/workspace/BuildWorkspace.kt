@@ -102,7 +102,7 @@ class BuildWorkspace(private val context: Context) {
         save(imported); return imported
     }
     suspend fun prepare(recipe: BuildRecipe, apk: File, repo: PatchBundleRepository, prefs: PreferencesManager): Pair<Patcher.ViewModelParams, List<String>> {
-        val info = InstallDiagnostics.archive(context, apk) ?: error("Select a standalone APK with a readable manifest")
+        val info = app.morphe.manager.patcher.split.SplitApkInspector.withRepresentativeApk(apk, context.cacheDir) { InstallDiagnostics.archive(context, it) } ?: error("Selected APK has no readable base manifest")
         require(info.packageName == recipe.packageName) { "APK belongs to ${info.packageName}; recipe targets ${recipe.packageName}" }
         val sources = repo.sources.first(); val identities = sources.associate { it.uid to sourceIdentity(it) }
         val metadata = repo.allBundlesInfoFlow.first(); val changes = mutableListOf<String>()

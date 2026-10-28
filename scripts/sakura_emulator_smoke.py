@@ -35,13 +35,19 @@ time.sleep(4)
 root = capture('large-font-home')
 for label in ['Skip', 'Not now', 'Later', 'Close']:
     if tap_text(root, label): root = capture('after-onboarding')
-if tap_text(root, 'Settings'):
+assert tap_text(root, 'Settings'), 'Settings navigation is not accessible at font scale 1.5'
+if True:
     root = capture('settings')
-    for _ in range(6):
+    workspace_opened = False
+    for _ in range(8):
         if tap_text(root, 'Build workspace'):
-            capture('build-workspace'); break
+            screen = capture('build-workspace')
+            assert any('Your next patch' in node.get('text', '') or node.get('text') == 'Import recipe' for node in screen.iter('node')), 'Build workspace content did not open'
+            workspace_opened = True
+            break
         adb('shell', 'input', 'swipe', '500', '1500', '500', '500', '400'); time.sleep(0.5)
         root = capture('settings-scroll')
+assert workspace_opened, 'Build workspace navigation failed'
 adb('shell', 'settings', 'put', 'system', 'font_scale', '1.0')
 log = adb('logcat', '-d'); (out / 'logcat.txt').write_text(log)
 assert 'FATAL EXCEPTION' not in log, 'App crashed; inspect smoke logcat'
