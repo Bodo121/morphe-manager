@@ -9,6 +9,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -34,7 +36,14 @@ fun SakuraPatcherLanding(
             .padding(start = 18.dp, end = 18.dp, top = 16.dp, bottom = bottomBarHeight + 20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text("APK Patcher", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Image(
+                painter = painterResource(R.drawable.sakura_app_icon),
+                contentDescription = null,
+                modifier = Modifier.size(36.dp)
+            )
+            Text("APK Patcher", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        }
         Text(
             "Build a patched APK with your installed sources. Advanced options, signing, " +
                 "installation and logs still use the original SakuraPatcher workflow.",

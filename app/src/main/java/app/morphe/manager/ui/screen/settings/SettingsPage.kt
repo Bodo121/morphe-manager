@@ -81,6 +81,7 @@ fun SettingsPage(
                             bottom = bottomBarHeight + Defaults.SpaceLarge
                         )
                 ) {
+                    if (!settingsSearch.isActive) SakuraThemePicker(settingsViewModel.prefs)
                     GeneralSection(navigation.openSubpage, onboardingState)
                     PatchingSection(settingsViewModel, navigation, onboardingState)
                     UpdatesSection(settingsViewModel, homeViewModel)
