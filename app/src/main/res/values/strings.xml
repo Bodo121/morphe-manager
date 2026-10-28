@@ -1347,7 +1347,7 @@ Details: %2$s"</string>
     <string name="easter_egg_pill_blue_toast_again">Unplugged. The way back is where it always was</string>
 
     <!-- Shared strings -->
-    <string name="app_name" translatable="false">Morphe</string>
+    <string name="app_name" translatable="false">SakuraPatcher</string>
     <string name="select_file">Select file</string>
     <string name="select_files">Select files</string>
     <!-- Label of a footer button beside "Close". Keep it short, a longer one moves the buttons onto two rows -->
