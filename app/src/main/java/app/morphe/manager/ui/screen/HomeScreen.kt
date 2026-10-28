@@ -382,7 +382,7 @@ fun HomeScreen(
                 onOpenApps = { openPage(MainPage.APPS) },
                 onOpenPatchLab = { openPage(MainPage.PATCH_LAB) },
                 onOpenSources = { openPage(MainPage.SOURCES) },
-                onStartBatch = { if (repatchableApps.isNotEmpty()) onStartBatchPatch(repatchableApps) }
+                onStartBatch = { if (repatchableApps.isNotEmpty()) startBatchPatch(repatchableApps) }
             )
 
             MainPage.PATCH_LAB -> androidx.compose.foundation.layout.Column(
