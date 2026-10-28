@@ -53,8 +53,8 @@ class PreferencesManager(
 ) : BasePreferencesManager(context, "settings") {
 
     // Appearance tab
-    val backgroundType = enumPreference("background_type", BackgroundType.CIRCLES)
-    val enableBackgroundParallax = booleanPreference("enable_background_parallax", true)
+    val backgroundType = enumPreference("background_type", BackgroundType.NONE)
+    val enableBackgroundParallax = booleanPreference("enable_background_parallax", false)
     val randomBackgroundInterval = enumPreference("random_background_interval", RandomInterval.ON_LAUNCH)
 
     /** The background the last launch drew for RANDOM, which the next launch steers clear of. */
@@ -75,7 +75,7 @@ class PreferencesManager(
     val outlines = booleanPreference("outlines", true)
 
     /** Whether headers, bars and panels blur what scrolls under them, or stand solid over it. */
-    val blur = booleanPreference("blur", true)
+    val blur = booleanPreference("blur", false)
     val showGreetingPhrases = booleanPreference("show_greeting_phrases", true)
 
     /** The per-app badges carry the same news, so the banner is worth turning off. */
@@ -97,8 +97,7 @@ class PreferencesManager(
     private val themeStyleMigrated = booleanPreference("theme_style_migrated_v1", false)
 
     // Experimental: choose which package's patch metadata to use for another APK.
-    val crossPackageTarget = stringPreference("cross_package_target", "")
-    val crossPackageSource = stringPreference("cross_package_source", "")
+    val allowCrossPackagePatches = booleanPreference("allow_cross_package_patches", false)
 
     // Advanced tab
     val useManagerPrereleases = booleanPreference("manager_prereleases", false)
