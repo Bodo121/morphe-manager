@@ -63,14 +63,7 @@ fun Modifier.pressScale(
     enabled: Boolean = true,
     pressedScale: Float = PressedScale,
     label: String = "press_scale"
-): Modifier {
-    val scale = rememberPressScale(interactionSource, enabled, pressedScale, label)
-
-    return graphicsLayer {
-        scaleX = scale.value
-        scaleY = scale.value
-    }
-}
+): Modifier = this
 
 /**
  * How far into a press [interactionSource] is, from 0 at rest to 1 held, sprung so a quick tap

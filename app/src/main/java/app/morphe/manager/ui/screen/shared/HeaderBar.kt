@@ -77,7 +77,7 @@ fun HeaderBar(
         // The keyboard goes as the field starts to close, so what it leaves room for settles alongside
         // rather than jumping once the field is gone
         if (!open && fieldFocused) focusManager.clearFocus()
-        progress.animateTo(if (open) 1f else 0f, SearchMorphSpec)
+        progress.snapTo(if (open) 1f else 0f)
     }
     // Composed only while any of it shows, so a closed field holds no focus and takes no taps
     val fieldShown = remember { derivedStateOf { progress.value > 0f } }
