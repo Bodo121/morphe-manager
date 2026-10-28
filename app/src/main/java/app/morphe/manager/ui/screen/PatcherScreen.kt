@@ -398,6 +398,21 @@ private fun PatcherScreenContent(
         )
     }
 
+    // Cross-package pre-flight dialog. Prevent wrong-app fingerprints from silently
+    // entering YouTube / Music / Reddit runs, while retaining an explicit expert override.
+    DialogHost(target = patcherViewModel.foreignPatchWarning) { warning ->
+        ForeignPatchesDialog(
+            patchNames = warning.patchNames,
+            targetPackageName = patcherViewModel.packageName,
+            onExclude = patcherViewModel::continueWithoutForeignPatches,
+            onTryAnyway = patcherViewModel::continueWithForeignPatches,
+            onDismiss = {
+                patcherViewModel.dismissForeignPatchWarning()
+                onBackClick()
+            }
+        )
+    }
+
     // Option path pre-flight dialog
     // Shown when a patch option points at a path that is gone or cannot be read
     DialogHost(target = patcherViewModel.inaccessibleOptionPaths) { errorState ->

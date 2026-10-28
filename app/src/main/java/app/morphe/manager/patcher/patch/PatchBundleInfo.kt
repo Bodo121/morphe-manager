@@ -59,6 +59,8 @@ sealed class PatchBundleInfo {
          * Create a [PatchBundleInfo.Scoped] that only contains information about patches that are relevant for a specific [packageName].
          */
         fun forPackage(packageName: String, version: String?, versionCode: Long? = null, compatibilityPackage: String = packageName, allowAllPackages: Boolean = false): Scoped {
+            // Override expands visibility, not the claimed compatibility of a patch.
+            // A YouTube Music-only patch must not become "compatible" with YouTube.
             val forThisPackage = patches.filter { allowAllPackages || it.compatibleWith(compatibilityPackage) }
             // Selections are stored per app, so a name only has to be unique within this list
             val keys = uniqueNames(forThisPackage)
@@ -81,7 +83,7 @@ sealed class PatchBundleInfo {
                 // Categorise into compatible / incompatible / universal
                 val targetList = when {
                     patch.compatiblePackages == null -> universal
-                    (allowAllPackages || patch.supports(compatibilityPackage, version, versionCode)) -> compatible
+                    patch.supports(compatibilityPackage, version, versionCode) -> compatible
                     else -> incompatible
                 }
                 targetList.add(patch)

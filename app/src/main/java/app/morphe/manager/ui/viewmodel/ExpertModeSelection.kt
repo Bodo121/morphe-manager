@@ -252,6 +252,7 @@ class ExpertModeSelection(
     fun resetToDefault(bundleUid: Int) {
         val bundle = bundles.firstOrNull { it.uid == bundleUid } ?: return
         val defaults = bundle.patchSequence(allowIncompatible)
+            .filter { patch -> app?.packageName?.let(patch::compatibleWith) == true }
             .filter(target::defaultSelected)
             .mapTo(mutableSetOf()) { it.name }
         update(patches.withBundle(bundleUid, defaults))

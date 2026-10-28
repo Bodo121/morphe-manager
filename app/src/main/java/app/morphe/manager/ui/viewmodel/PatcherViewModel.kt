@@ -254,6 +254,34 @@ class PatcherViewModel(
         missingPatchWarning = null
     }
 
+    /**
+     * Expert compatibility override may expose patches intended for a different app.
+     * An imported/saved selection or "Select all" must never apply those silently.
+     */
+    data class ForeignPatchWarningState(val patchNames: List<String>)
+    var foreignPatchWarning by mutableStateOf<ForeignPatchWarningState?>(null)
+        private set
+
+    private enum class ForeignPatchChoice { ASK, EXCLUDE, ALLOW }
+    private var foreignPatchChoice = ForeignPatchChoice.ASK
+
+    fun continueWithoutForeignPatches() {
+        foreignPatchChoice = ForeignPatchChoice.EXCLUDE
+        foreignPatchWarning = null
+        viewModelScope.launch { runPreflightCheck() }
+    }
+
+    /** Explicit developer-only override: the patcher may still fail on foreign fingerprints. */
+    fun continueWithForeignPatches() {
+        foreignPatchChoice = ForeignPatchChoice.ALLOW
+        foreignPatchWarning = null
+        viewModelScope.launch { runPreflightCheck() }
+    }
+
+    fun dismissForeignPatchWarning() {
+        foreignPatchWarning = null
+    }
+
     var batteryOptimizationDialog by mutableStateOf(false)
         private set
 
@@ -618,6 +646,33 @@ class PatcherViewModel(
                 .mapValues { (uid, patches) -> patches - missing[uid].orEmpty() }
                 .filterValues { it.isNotEmpty() }
             patchRun.totalPatches = patchCount
+        }
+
+        // A cross-package override can expose YouTube Music patches while patching YouTube.
+        // Check the actual target of every selected patch BEFORE invoking the native patcher.
+        // This catches "Select all" and old saved selections, but preserves deliberate opt-in.
+        val foreignByBundle = runSelection.mapNotNull { (uid, selectedNames) ->
+            val foreignNames = scopedBundles[uid]?.patches.orEmpty()
+                .filter { it.name in selectedNames && !it.compatibleWith(packageName) }
+                .mapTo(mutableSetOf()) { it.name }
+            if (foreignNames.isNotEmpty()) uid to foreignNames else null
+        }.toMap()
+        if (foreignByBundle.isNotEmpty()) {
+            if (foreignPatchChoice == ForeignPatchChoice.ASK) {
+                val names = foreignByBundle.flatMap { (uid, patchNames) ->
+                    scopedBundles[uid]?.patches.orEmpty()
+                        .filter { it.name in patchNames }
+                        .map { it.displayName }
+                }.distinct().sorted()
+                foreignPatchWarning = ForeignPatchWarningState(names)
+                return false
+            }
+            if (foreignPatchChoice == ForeignPatchChoice.EXCLUDE) {
+                runSelection = runSelection
+                    .mapValues { (uid, names) -> names - foreignByBundle[uid].orEmpty() }
+                    .filterValues { it.isNotEmpty() }
+                patchRun.totalPatches = patchCount
+            }
         }
 
         patchSourcesForLog = collectSelectedBundleMetadata()

@@ -187,6 +187,39 @@ fun DialogHostScope.MissingPatchesDialog(
     }
 }
 
+/** Warn about intentionally selected patches declared for another Android package. */
+@Composable
+fun DialogHostScope.ForeignPatchesDialog(
+    patchNames: List<String>,
+    targetPackageName: String,
+    onExclude: () -> Unit,
+    onTryAnyway: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AppDialog(
+        onDismissRequest = onDismiss,
+        title = "Patches intended for another app",
+        description = "The following patches do not declare compatibility with $targetPackageName. " +
+            "They may fail with missing bytecode fingerprints. Exclude them for this build " +
+            "or explicitly try anyway (advanced).",
+        footer = {
+            AppDialogButtonRow(
+                primaryText = "Exclude and patch",
+                onPrimaryClick = onExclude,
+                secondaryText = "Try anyway",
+                onSecondaryClick = onTryAnyway
+            )
+        }
+    ) {
+        MonospaceValuePanel(
+            value = patchNames.take(24).joinToString("\\n") +
+                if (patchNames.size > 24) "\\n+ ${patchNames.size - 24} more" else "",
+            label = "Other-app patches (${patchNames.size})",
+            tone = SemanticTone.Warning
+        )
+    }
+}
+
 /**
  * Pre-flight dialog shown when one or more patch option paths cannot be used for the run.
  *

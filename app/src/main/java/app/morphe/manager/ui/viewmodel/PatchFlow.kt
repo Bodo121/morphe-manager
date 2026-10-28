@@ -1151,7 +1151,9 @@ class PatchFlow(
                 )
             } else {
                 // No saved selections - use default for the contributing bundles
-                contributingBundles.toPatchSelection(allowIncompatible) { _, patch -> target.defaultSelected(patch) }
+                contributingBundles.toPatchSelection(allowIncompatible) { _, patch ->
+                    patch.compatibleWith(selectedApp.packageName) && target.defaultSelected(patch)
+                }
             }
 
             // Validate options
@@ -1177,6 +1179,7 @@ class PatchFlow(
             .filter { it.enabled }
             .map { bundle ->
                 val patchNames = bundle.patchSequence(allowIncompatible)
+                    .filter { it.compatibleWith(selectedApp.packageName) }
                     .filter(target::defaultSelected)
                     .mapTo(mutableSetOf()) { it.name }
                 bundle to patchNames
@@ -1201,6 +1204,7 @@ class PatchFlow(
         val bundle = bundleUid?.let { uid -> allBundles.find { it.uid == uid } }
         if (bundle != null) {
             val patchNames = bundle.patchSequence(allowIncompatible = true)
+                .filter { it.compatibleWith(selectedApp.packageName) }
                 .filter(target::defaultSelected)
                 .mapTo(mutableSetOf()) { it.name }
             if (patchNames.isNotEmpty()) {
