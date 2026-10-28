@@ -10,7 +10,7 @@ import androidx.compose.ui.unit.dp
 
 /** Metrics shared by every screen, so all of them step along the same scales. */
 object Defaults {
-    val CardElevation = 2.dp
+    val CardElevation = 0.dp
 
     // Corner radii on Material's shape scale. A surface nested in another takes a smaller step,
     // so an inner corner never rounds wider than the one around it
@@ -65,13 +65,13 @@ object Defaults {
 
     // Animation durations
     /** Duration used for dialog enter/exit and overlay transitions. */
-    const val ANIMATION_DURATION = 220
+    const val ANIMATION_DURATION = 130
     /** Shorter fade duration used inside spring-based exit transitions. */
-    const val ANIMATION_DURATION_SHORT = 180
+    const val ANIMATION_DURATION_SHORT = 95
 
     // Dialog animation scale
     /** Initial/target scale for dialog enter/exit scale animation. */
-    const val DIALOG_SCALE = 0.95f
+    const val DIALOG_SCALE = 1f
 
     /** Material's opacity for content that is present but out of reach. */
     const val DISABLED_ALPHA = 0.38f

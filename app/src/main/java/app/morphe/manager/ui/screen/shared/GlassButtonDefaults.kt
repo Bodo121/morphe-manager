@@ -32,7 +32,7 @@ object GlassButtonDefaults {
     @Composable
     fun containerColor(selected: Boolean = false): Color = containerColor(
         base = if (selected) MaterialTheme.colorScheme.primaryContainer
-        else MaterialTheme.colorScheme.surfaceVariant,
+        else MaterialTheme.colorScheme.surfaceContainer,
         selected = selected
     )
 
@@ -41,9 +41,9 @@ object GlassButtonDefaults {
     fun containerColor(base: Color, selected: Boolean): Color {
         val isDark = isDarkTheme()
         val alpha = if (selected) {
-            if (isDark) 0.55f else 0.72f
+            1f
         } else {
-            if (isDark) 0.35f else 0.6f
+            1f
         }
         return ThemeTraitsDefaults.surfaceColor(base = base.copy(alpha = alpha), selected = selected)
     }

@@ -142,14 +142,8 @@ object Animations {
     val fadeOut = fadeOut(animationSpec = defaultTween())
 
     // Dialog transitions
-    val dialogEnter = fadeIn + scaleIn(
-        initialScale = Defaults.DIALOG_SCALE,
-        animationSpec = defaultTween(easing = FastOutSlowInEasing)
-    )
-    val dialogExit = fadeOut + scaleOut(
-        targetScale = Defaults.DIALOG_SCALE,
-        animationSpec = defaultTween()
-    )
+    val dialogEnter = fadeIn
+    val dialogExit = fadeOut
 
     // Overlays (no scale needed)
     val overlayEnter = fadeIn

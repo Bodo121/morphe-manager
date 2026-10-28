@@ -107,6 +107,9 @@ class HomeAppActions(
 class HomeChromeActions(
     val onOtherAppsClick: () -> Unit,
     val onOpenSources: () -> Unit,
+    val onOpenPatchLab: () -> Unit,
+    val onOpenSelections: () -> Unit,
+    val onOpenAppearance: () -> Unit,
     val onRefreshGreeting: (() -> Unit)?,
     val onHideMoreAppsCard: () -> Unit
 )
@@ -147,8 +150,16 @@ internal fun SectionsLayout(
     }
 
     // Opens the list rather than sitting over it, so it scrolls away with the cards
-    val greeting: (@Composable () -> Unit)? = greetingMessage?.takeIf { it.isNotEmpty() }?.let { message ->
-        { GreetingSection(message = message, onRefresh = chromeActions.onRefreshGreeting) }
+    val greeting: @Composable () -> Unit = {
+        SakuraHomeOverview(
+            patchedApps = apps.visible.count { it.installedApp != null },
+            availableApps = apps.visible.size,
+            onSelectApk = chromeActions.onOtherAppsClick,
+            onPatchLab = chromeActions.onOpenPatchLab,
+            onSources = chromeActions.onOpenSources,
+            onSelections = chromeActions.onOpenSelections,
+            greeting = greetingMessage
+        )
     }
 
     PinnedHeaderPage(
@@ -162,6 +173,7 @@ internal fun SectionsLayout(
                 sortOpen = state.isListOptionsOpen,
                 onSortClick = { state.isListOptionsOpen = !state.isListOptionsOpen },
                 onPatchFileClick = chromeActions.onOtherAppsClick,
+                onAppearanceClick = chromeActions.onOpenAppearance,
                 tour = onboardingState
             )
         },

@@ -309,7 +309,7 @@ fun ManagerTheme(
         // variants, in step with the app's own controls
         MaterialExpressiveTheme(
             colorScheme = finalScheme,
-            motionScheme = MotionScheme.expressive(),
+            motionScheme = MotionScheme.standard(),
             typography = Typography
         ) {
             // A ring rather than a tint marks the focused control, which a remote or a keyboard

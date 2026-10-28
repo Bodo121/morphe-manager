@@ -55,7 +55,12 @@ fun SettingsPage(
 
     PinnedHeaderPage(
         header = {
-            PageHeader(title = stringResource(R.string.settings), search = search, searchLabel = searchLabel)
+            PageHeader(
+                title = "Sakura Settings",
+                subtitle = "Appearance • Patching • Performance • System",
+                search = search,
+                searchLabel = searchLabel
+            )
         },
         scrollState = scrollState,
         modifier = modifier,

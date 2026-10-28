@@ -58,6 +58,7 @@ internal fun HomeHeader(
     sortOpen: Boolean,
     onSortClick: () -> Unit,
     onPatchFileClick: () -> Unit,
+    onAppearanceClick: () -> Unit,
     // Set while the tour runs, which points at the button for other apps
     tour: OnboardingState? = null
 ) {
@@ -80,6 +81,12 @@ internal fun HomeHeader(
         search = search,
         searchLabel = stringResource(R.string.home_search_apps),
         actions = {
+            TitleAction(
+                icon = MaterialSymbols.Rounded.Palette,
+                contentDescription = "Sakura appearance and light/dark mode",
+                onClick = onAppearanceClick,
+                style = TitleActionStyle.Neutral
+            )
             // Comes and goes with what it brings back, as the alerts it stands for do
             val snoozedCount = alerts.snoozedCount
             AnimatedVisibility(
@@ -97,7 +104,7 @@ internal fun HomeHeader(
                     ),
                     onClick = alerts::restoreSnoozed,
                     style = TitleActionStyle.Neutral,
-                    modifier = Modifier.ringOnArrival(this)
+                    modifier = Modifier
                 )
             }
 

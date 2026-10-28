@@ -24,6 +24,7 @@ fun SakuraPatcherLanding(
     onOpenApps: () -> Unit,
     onOpenPatchLab: () -> Unit,
     onOpenSources: () -> Unit,
+    onOpenSelections: () -> Unit,
     onStartBatch: () -> Unit
 ) {
     Column(
@@ -86,7 +87,10 @@ fun SakuraPatcherLanding(
                 OutlinedButton(onClick = onOpenPatchLab, modifier = Modifier.fillMaxWidth()) {
                     Text("Open Sakura PatchLab")
                 }
-                TextButton(onClick = onOpenSources) { Text("Manage patch sources") }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = onOpenSources) { Text("Patch sources") }
+                    TextButton(onClick = onOpenSelections) { Text("Saved selections") }
+                }
             }
         }
         if (repatchableCount > 0) {
