@@ -96,6 +96,10 @@ class PreferencesManager(
     /** Guards the one-shot migration that folds the retired `dynamic_color` toggle into [themeStyle]. */
     private val themeStyleMigrated = booleanPreference("theme_style_migrated_v1", false)
 
+    // Experimental: choose which package's patch metadata to use for another APK.
+    val crossPackageTarget = stringPreference("cross_package_target", "")
+    val crossPackageSource = stringPreference("cross_package_source", "")
+
     // Advanced tab
     val useManagerPrereleases = booleanPreference("manager_prereleases", false)
 
