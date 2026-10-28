@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.pm.PackageManager
+import android.os.Build
 import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -111,7 +112,11 @@ private fun inspectSakuraApk(context: Context, uri: Uri): SakuraApkScan {
             fileName = fileName,
             packageName = packageInfo.packageName,
             version = packageInfo.versionName,
-            versionCode = packageInfo.longVersionCode,
+            versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                packageInfo.longVersionCode
+            } else {
+                packageInfo.versionCode.toLong()
+            },
             bytes = bytes,
             entriesCount = count,
             entryIndex = files,
@@ -142,7 +147,6 @@ fun SakuraPatchLabScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var filter by remember { mutableStateOf("All") }
     var search by remember { mutableStateOf("") }
-    var showDiff by remember { mutableStateOf(false) }
 
     fun scan(uri: Uri, comparisonSlot: Boolean) {
         scope.launch {
