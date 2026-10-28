@@ -316,6 +316,7 @@ private fun DialogHostScope.PatchFlowDialog(
                 onDismiss = flow::backFromApkSource,
                 onOpenApkDownloadHelper = apkDownloadHelpers.open,
                 onTrustApkDownloadHelpers = onTrustApkDownloadHelpers.takeIf { apkDownloadHelpers.hasUntrusted },
+                onDirectApkDownloaded = flow::onHelperApkReceived,
                 onContinue = flow::handleDownloadInstructionsContinue
             )
         }

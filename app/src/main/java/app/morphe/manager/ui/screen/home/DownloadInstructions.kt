@@ -242,6 +242,7 @@ internal fun DialogHostScope.DownloadInstructionsDialog(
     onDismiss: () -> Unit,
     onOpenApkDownloadHelper: (() -> Unit)? = null,
     onTrustApkDownloadHelpers: (() -> Unit)? = null,
+    onDirectApkDownloaded: ((android.net.Uri) -> Unit)? = null,
     onContinue: (handOff: (String) -> Boolean) -> Unit
 ) {
     val uriHandler = LocalUriHandler.current
@@ -376,6 +377,19 @@ internal fun DialogHostScope.DownloadInstructionsDialog(
                         }
                     }
                 }
+            }
+
+            // Direct HTTPS archive links can be downloaded *inside* Sakura.
+            // Landing pages (APKMirror/Uptodown/search) still open the browser.
+            if (source is ApkDownloadSource.DirectFile &&
+                downloadUrl?.startsWith("https://", ignoreCase = true) == true &&
+                onDirectApkDownloaded != null
+            ) {
+                SakuraDirectApkDownload(
+                    url = downloadUrl,
+                    requestedVersion = requestedVersion,
+                    onDownloaded = onDirectApkDownloaded
+                )
             }
 
             // A helper the user has installed but not trusted is not offered above, so this says why
