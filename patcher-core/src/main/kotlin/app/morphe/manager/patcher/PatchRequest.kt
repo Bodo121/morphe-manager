@@ -21,6 +21,7 @@ import kotlinx.serialization.json.JsonElement
 data class PatchRequest(
     val packageName: String,
     val compatibilityPackage: String = packageName,
+    val allowCrossPackagePatches: Boolean = false,
     val inputFile: String,
     val outputFile: String,
     val mergedApkFile: String,
