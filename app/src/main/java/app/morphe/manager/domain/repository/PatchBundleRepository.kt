@@ -1966,14 +1966,14 @@ class PatchBundleRepository(
                             }
 
                             val result = try {
-                                val onProgress: PatchBundleDownloadProgress = { bytesRead, bytesTotal ->
+                                val onProgress: PatchBundleDownloadProgress = progress@{ bytesRead, bytesTotal ->
                                     if (isRemoteUpdateCancelled(bundle.uid)) throw BundleUpdateCancelled()
                                     bundleBytes[bundle.uid] = bytesRead to bytesTotal
                                     val now = SystemClock.elapsedRealtime()
                                     val previous = lastProgressPublishMs.get()
                                     if (now - previous < performanceMode.progressIntervalMs ||
                                         !lastProgressPublishMs.compareAndSet(previous, now)
-                                    ) return@PatchBundleDownloadProgress
+                                    ) return@progress
                                     val snapshot = bundleBytes.values.toList()
                                     val aggRead = snapshot.sumOf { it.first }
                                     val knownTotals = snapshot.mapNotNull { it.second }
