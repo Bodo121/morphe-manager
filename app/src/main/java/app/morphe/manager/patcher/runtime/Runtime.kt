@@ -15,6 +15,7 @@ import android.content.res.Resources
 import android.os.Build
 import app.morphe.manager.data.platform.Filesystem
 import app.morphe.manager.domain.repository.PatchBundleRepository
+import app.morphe.manager.domain.manager.PreferencesManager
 import app.morphe.manager.patcher.DeviceConfig
 import app.morphe.manager.patcher.PatchRequest
 import app.morphe.manager.patcher.PatchingListener
@@ -40,6 +41,7 @@ class Runtime(
     private val context: Context,
     private val fs: Filesystem,
     private val patchBundlesRepo: PatchBundleRepository,
+    private val prefs: PreferencesManager,
     private val processes: PatcherProcesses,
     private val vm: PatcherVm
 ) {
@@ -75,8 +77,12 @@ class Runtime(
         onMergedApkReady: (suspend (File) -> Unit)? = null
     ): Duration {
         val mergedApk = fs.tempDir.resolve("merged-${System.currentTimeMillis()}.apk")
+        val target = prefs.crossPackageTarget.get().trim()
+        val source = prefs.crossPackageSource.get().trim()
+        val compatibilityPackage = source.takeIf { packageName == target && it.isNotEmpty() } ?: packageName
         val request = PatchRequest(
             packageName = packageName,
+            compatibilityPackage = compatibilityPackage,
             inputFile = inputFile,
             outputFile = outputFile,
             mergedApkFile = mergedApk.absolutePath,
