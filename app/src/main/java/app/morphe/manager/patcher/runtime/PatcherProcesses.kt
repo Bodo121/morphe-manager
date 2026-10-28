@@ -463,8 +463,15 @@ class PatcherProcesses(
                             val bound = context.bindService(
                                 Intent(context, PatcherService::class.java),
                                 connection,
-                                // Keeps the process off the slow background cores
-                                Context.BIND_AUTO_CREATE or Context.BIND_IMPORTANT
+                                // Keep the patcher important while the foreground worker is active.
+                                // On MIUI/HyperOS a bound headless process may otherwise be cleaned
+                                // when the user leaves the manager. This is a mitigation only:
+                                // Xiaomi may still kill it for excessive private memory usage.
+                                Context.BIND_AUTO_CREATE or Context.BIND_IMPORTANT or
+                                    (if (android.os.Build.MANUFACTURER.equals("Xiaomi", true) ||
+                                            android.os.Build.MANUFACTURER.equals("POCO", true) ||
+                                            android.os.Build.MANUFACTURER.equals("Redmi", true)
+                                    ) Context.BIND_ABOVE_CLIENT else 0)
                             )
                             if (!bound) connection.fail("could not be bound")
                         }
