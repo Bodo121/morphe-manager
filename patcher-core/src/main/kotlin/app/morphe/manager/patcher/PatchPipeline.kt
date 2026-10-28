@@ -49,7 +49,7 @@ class PatchPipeline(
 
     private suspend fun selectedPatches(): List<Patch<*>> {
         val selected = request.bundles.flatMap { bundle ->
-            val patches = loadPatches(bundle).keyedFor(request.packageName)
+            val patches = loadPatches(bundle).keyedFor(request.compatibilityPackage)
             patches.applyPatchOptions(
                 bundle.options.mapValues { (_, options) -> options.mapValues { (_, value) -> optionValueFromJson(value) } },
                 logger
