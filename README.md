@@ -28,3 +28,13 @@ SakuraPatcher is an **unofficial** fork of [Morphe Manager](https://github.com/M
 ## Development status
 
 Experimental. Build success is not equivalent to passing on-device tests, especially on MIUI/HyperOS systems that can terminate memory-heavy patcher processes.
+
+## Sakura PatchLab (native Android)
+
+Open **Settings → Patching → Sakura PatchLab** to inspect a standalone APK entirely on-device. The scanner reads the Android package/version/permissions, DEX and native-library counts, and ZIP structure; it cross-references currently loaded patch-source metadata and provides a copyable report. A second APK can be compared by ZIP entry names, CRC and sizes.
+
+The results are **metadata checks**, not proof that a patch's bytecode fingerprints match. The optional cross-package switch uses the same manager preference as normal patching. This tool does not execute APK code, upload the APK, or replace the manager's existing patch/install engine.
+
+### Imported UI design
+
+The supplied Google AI Studio export was a React/Vite mockup with simulated patch results, not an Android project. Sakura Dark/Light colors, compact technical cards, screen labels, and the diagnostics workflow inspired a native Jetpack Compose implementation. The working Morphe patcher, installers, sources, onboarding, backup, settings, and batch flows remain native.

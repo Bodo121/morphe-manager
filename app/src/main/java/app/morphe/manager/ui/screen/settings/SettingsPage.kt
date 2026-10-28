@@ -164,6 +164,7 @@ private fun PatchingSection(
                 modifier = Modifier.tourTarget(TourTarget.INSTALLER, tour)
             )
             SubpageItem(SettingsSubpage.PATCHER, navigation.openSubpage)
+            SubpageItem(SettingsSubpage.PATCH_LAB, navigation.openSubpage)
         }
     }
 }

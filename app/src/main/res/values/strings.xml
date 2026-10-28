@@ -1564,4 +1564,6 @@ Do you still want to continue?"</string>
     <string name="tour_prompt_confirm">Show me around</string>
     <string name="onboarding_restart_title">Feature tour</string>
     <string name="onboarding_restart_desc">A guided tour of key features</string>
+    <string name="sakura_patchlab_title">Sakura PatchLab</string>
+    <string name="sakura_patchlab_summary">Inspect local APKs, compare archives and check patch-source compatibility</string>
 </resources>

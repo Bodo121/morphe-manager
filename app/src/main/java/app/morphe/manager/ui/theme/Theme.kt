@@ -210,8 +210,40 @@ fun ManagerTheme(
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
 
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+        darkTheme -> DarkColorScheme.copy(
+            primary = Color(0xFFFF4FA3),
+            onPrimary = Color(0xFF2B0920),
+            primaryContainer = Color(0xFF52213D),
+            onPrimaryContainer = Color(0xFFFFD9EA),
+            secondary = Color(0xFFC9A4FF),
+            background = Color(0xFF0B0910),
+            onBackground = Color(0xFFF8F5FA),
+            surface = Color(0xFF17121F),
+            onSurface = Color(0xFFF8F5FA),
+            surfaceVariant = Color(0xFF211A2C),
+            onSurfaceVariant = Color(0xFFC8BFCE),
+            surfaceContainer = Color(0xFF17121F),
+            surfaceContainerLow = Color(0xFF130F19),
+            surfaceContainerHigh = Color(0xFF211A2C),
+            outline = Color(0xFF776C80)
+        )
+        else -> LightColorScheme.copy(
+            primary = Color(0xFFE63E93),
+            onPrimary = Color.White,
+            primaryContainer = Color(0xFFFFD7E9),
+            onPrimaryContainer = Color(0xFF4F1634),
+            secondary = Color(0xFF8151C9),
+            background = Color(0xFFF9F6FB),
+            onBackground = Color(0xFF1B1622),
+            surface = Color(0xFFFFFFFF),
+            onSurface = Color(0xFF1B1622),
+            surfaceVariant = Color(0xFFF1EAF7),
+            onSurfaceVariant = Color(0xFF665C70),
+            surfaceContainer = Color(0xFFFFFFFF),
+            surfaceContainerLow = Color(0xFFF9F6FB),
+            surfaceContainerHigh = Color(0xFFF1EAF7),
+            outline = Color(0xFF807585)
+        )
     }.let {
         if (darkTheme && pureBlackTheme) {
             val pureBlack = Color.Black
