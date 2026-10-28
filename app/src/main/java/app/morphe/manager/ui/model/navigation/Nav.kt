@@ -66,6 +66,7 @@ data object Patcher : ComplexParameter<Patcher.ViewModelParams> {
         val options: @RawValue Options,
         val targetPackageName: String? = null,
         val allowIncompatible: Boolean = false,
-        val useMount: Boolean = false
+        val useMount: Boolean = false,
+        val useRecipeOptions: Boolean = false
     ) : Parcelable
 }

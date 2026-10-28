@@ -13,7 +13,7 @@ plugins {
     alias(libs.plugins.devtools)
     alias(libs.plugins.about.libraries)
     alias(libs.plugins.about.libraries.android)
-    alias(libs.plugins.google.services)
+    // Sakura uses scheduled update checks; no upstream Firebase project credentials.
     signing
 }
 
@@ -230,10 +230,10 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "app.morphe.manager"
+        applicationId = if (project.hasProperty("legacyMigration")) "app.morphe.manager" else "app.sakura.patcher"
         minSdk = 26
 
-        versionName = version.toString()
+        versionName = "3.0.0-sakura.${System.getenv("GITHUB_RUN_NUMBER") ?: "0"}"
 
         // VersionCode derived from current time (1-minute intervals) + offset.
         val nowMillis = System.currentTimeMillis()

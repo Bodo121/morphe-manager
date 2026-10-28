@@ -626,7 +626,7 @@ class PatcherViewModel(
         }
 
         // Expert mode carries its options with the run, simple mode keeps them per app
-        val options = if (prefs.useExpertMode.get()) {
+        val options = if (prefs.useExpertMode.get() || input.useRecipeOptions) {
             input.options
         } else {
             patchOptionsPrefs.exportPatchOptions(packageName)
@@ -648,8 +648,34 @@ class PatcherViewModel(
             return false
         }
 
-        startWorker(options)
-        return true
+        reviewedOptions = options
+        readyToBuild = true
+        return false
+    }
+
+    var readyToBuild by mutableStateOf(false)
+        private set
+    var runningDryRun by mutableStateOf(false)
+        private set
+    var previewResult by mutableStateOf<String?>(null)
+        private set
+    private var reviewedOptions: Options = emptyMap()
+    val readySummary: String get() = buildString {
+        appendLine("$packageName · ${version ?: "unknown version"}")
+        appendLine("${appliedSelection.values.sumOf { it.size }} patches from ${patchSourcesForLog.size} sources")
+        patchSourcesForLog.forEach { appendLine("${it.name} · ${it.version ?: "unknown"}") }
+        appendLine("Review source trust and patch options. A dry run executes patch code but does not compile, sign, or install an APK.")
+        previewResult?.let { appendLine(it) }
+    }
+    fun startReviewedBuild(dryRun: Boolean) {
+        if (!readyToBuild) return
+        readyToBuild = false
+        runningDryRun = dryRun
+        viewModelScope.launch {
+            patchRun.onRestart()
+            isPatching = true
+            startWorker(reviewedOptions)
+        }
     }
 
     private fun startWorker(options: Options) {
@@ -947,7 +973,8 @@ class PatcherViewModel(
             },
             onProgress = patchRun::onProgress,
             patchSources = patchSourcesForLog,
-            useMount = usingMountInstall
+            useMount = usingMountInstall,
+            dryRun = runningDryRun
         )
     }
 
@@ -961,6 +988,13 @@ class PatcherViewModel(
 
                 when (workInfo?.state) {
                     WorkInfo.State.SUCCEEDED -> {
+                        if (runningDryRun) {
+                            patchRun.stopStallWatch()
+                            isPatching = false
+                            previewResult = "Dry run passed: patches and dependencies executed. Compilation and signing are still untested."
+                            readyToBuild = true
+                            return@collect
+                        }
                         patchRun.stopStallWatch()
 
                         // Save original APK before deleting temporary file (blocking).

@@ -116,6 +116,9 @@ class PreferencesManager(
     val allowCrossPackagePatches = booleanPreference("allow_cross_package_patches", false)
 
     /** Real source-download concurrency and progress dispatch policy. */
+    val sakuraReduceMotion = booleanPreference("sakura_reduce_motion", false)
+    val sakuraPauseEffects = booleanPreference("sakura_pause_effects", true)
+
     val sakuraPerformanceMode = enumPreference("sakura_performance_mode", SakuraPerformanceMode.BALANCED)
 
     /** Remember the last batch installation policy for the next new queue. */

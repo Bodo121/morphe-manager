@@ -74,7 +74,8 @@ class Runtime(
         onPatchFailed: (String) -> Unit,
         onProgress: ProgressEventHandler,
         stripUnusedNativeLibs: Boolean,
-        onMergedApkReady: (suspend (File) -> Unit)? = null
+        onMergedApkReady: (suspend (File) -> Unit)? = null,
+        dryRun: Boolean = false
     ): Duration {
         val mergedApk = fs.tempDir.resolve("merged-${System.currentTimeMillis()}.apk")
         val request = PatchRequest(
@@ -87,7 +88,8 @@ class Runtime(
             workspaceDir = context.cacheDir.resolve("patch-workspace").absolutePath,
             bundles = requestedBundles(selectedPatches, options),
             stripUnusedNativeLibs = stripUnusedNativeLibs,
-            device = deviceConfig()
+            device = deviceConfig(),
+            dryRun = dryRun
         )
         val listener = ProgressReporter(context, logger, onProgress, onPatchCompleted, onPatchFailed)
 

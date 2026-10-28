@@ -9,6 +9,7 @@ import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -20,6 +21,7 @@ import app.morphe.manager.ui.theme.SeasonalEvent
  * Types of animated backgrounds available in the app.
  */
 enum class BackgroundType(val displayNameResId: Int) {
+    SAKURA(R.string.sakura_petals),
     CIRCLES(R.string.settings_appearance_background_circles),
     RINGS(R.string.settings_appearance_background_rings),
     MESH(R.string.settings_appearance_background_mesh),
@@ -72,8 +74,14 @@ fun AnimatedBackground(
     resolvedType: BackgroundType? = null,
     enableParallax: Boolean = true,
     speedMultiplier: () -> Float = { 1f },
-    patchingCompleted: () -> Boolean = { false }
+    patchingCompleted: () -> Boolean = { false },
+    effectsEnabled: Boolean = true
 ) {
+    val owner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    val state = owner.lifecycle.currentStateFlow.collectAsState().value
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val power = context.getSystemService(android.os.PowerManager::class.java)
+    if (!effectsEnabled || rememberReducedMotion() || !state.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) || power.isPowerSaveMode) return
     val effectiveType = if (type == BackgroundType.RANDOM) {
         resolvedType ?: BackgroundType.CIRCLES
     } else {
@@ -91,6 +99,7 @@ fun AnimatedBackground(
             .clipToBounds()
     ) {
         when (effectiveType) {
+            BackgroundType.SAKURA -> SakuraBackground(Modifier.fillMaxSize())
             BackgroundType.CIRCLES -> CirclesBackground(
                 modifier = Modifier.fillMaxSize(),
                 enableParallax = enableParallax,

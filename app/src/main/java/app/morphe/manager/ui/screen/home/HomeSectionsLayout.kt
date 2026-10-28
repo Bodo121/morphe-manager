@@ -111,6 +111,7 @@ class HomeChromeActions(
     val onOpenSources: () -> Unit,
     val onOpenPatchLab: () -> Unit,
     val onOpenSelections: () -> Unit,
+    val onOpenWorkspace: () -> Unit,
     val onOpenAppearance: () -> Unit,
     val onRefreshGreeting: (() -> Unit)?,
     val onHideMoreAppsCard: () -> Unit
@@ -166,6 +167,7 @@ internal fun SectionsLayout(
                 onPatchLab = chromeActions.onOpenPatchLab,
                 onSources = chromeActions.onOpenSources,
                 onSelections = chromeActions.onOpenSelections,
+                onWorkspace = chromeActions.onOpenWorkspace,
                 greeting = greetingMessage
             )
         }

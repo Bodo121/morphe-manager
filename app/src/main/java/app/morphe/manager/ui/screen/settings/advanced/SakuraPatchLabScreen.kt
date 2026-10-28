@@ -4,6 +4,8 @@
 package app.morphe.manager.ui.screen.settings.advanced
 
 import android.content.Context
+import app.morphe.manager.domain.workspace.DexMethodIndex
+import app.morphe.manager.domain.workspace.InstallDiagnostics
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.pm.PackageManager
@@ -18,6 +20,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import app.morphe.manager.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -62,7 +66,11 @@ private data class SakuraApkScan(
     val nativeLibraryCount: Int,
     val permissions: List<String>,
     val hasManifest: Boolean,
-    val hasResources: Boolean
+    val hasResources: Boolean,
+    val components: Set<String>,
+    val certificates: Set<String>,
+    val methods: Map<String, String>,
+    val inspectionNotes: List<String>
 )
 
 private data class SakuraPatchCheck(
@@ -104,10 +112,11 @@ private fun inspectSakuraApk(context: Context, uri: Uri): SakuraApkScan {
             }
         }
 
-        val packageInfo = context.packageManager.getPackageArchiveInfo(
-            tmp.absolutePath, PackageManager.GET_PERMISSIONS
-        ) ?: throw IOException("Android could not read the APK manifest. Choose a standalone .apk, not an .apkm or .apks bundle.")
+        val packageInfo = InstallDiagnostics.archive(context, tmp) ?: throw IOException("Android could not read the APK manifest. Choose a standalone .apk, not an .apkm or .apks bundle.")
 
+        val methods = linkedMapOf<String, String>()
+        val notes = mutableListOf<String>()
+        val installChecks = InstallDiagnostics.inspect(context, tmp)
         var count = 0
         var dex = 0
         val dexHeaders = mutableListOf<SakuraDexHeader>()
@@ -123,6 +132,12 @@ private fun inspectSakuraApk(context: Context, uri: Uri): SakuraApkScan {
                 if (files.size < 20000) files[entry.name] = entry.crc to entry.size
                 if (entry.name.matches(Regex("classes(\\d*)\\.dex"))) {
                     dex++
+                    if (methods.size < 50000 && entry.size in 112..(64L * 1024 * 1024)) {
+                        runCatching {
+                            val data = zip.getInputStream(entry).use { it.readBytes() }
+                            methods.putAll(DexMethodIndex.read(data, 50000 - methods.size))
+                        }.onFailure { notes += "Method inspection incomplete for ${entry.name}: ${it.message}" }
+                    } else notes += "Method inspection limited for ${entry.name}"
                     // Only read the 112-byte DEX header; never inflate a full DEX just
                     // to display its class/method ID counts.
                     if (dexHeaders.size < 30) {
@@ -172,7 +187,15 @@ private fun inspectSakuraApk(context: Context, uri: Uri): SakuraApkScan {
             nativeLibraryCount = libs,
             permissions = packageInfo.requestedPermissions?.toList().orEmpty().sorted(),
             hasManifest = hasManifest,
-            hasResources = hasResources
+            hasResources = hasResources,
+            components = buildSet {
+                packageInfo.activities.orEmpty().forEach { add("activity ${it.name} exported=${it.exported}") }
+                packageInfo.services.orEmpty().forEach { add("service ${it.name} exported=${it.exported}") }
+                packageInfo.receivers.orEmpty().forEach { add("receiver ${it.name} exported=${it.exported}") }
+                packageInfo.providers.orEmpty().forEach { add("provider ${it.name} exported=${it.exported} authorities=${it.authority}") }
+            },
+            certificates = InstallDiagnostics.signatures(packageInfo), methods = methods,
+            inspectionNotes = notes + installChecks + if (count > files.size) listOf("ZIP index limited to 20,000 paths; diff is partial") else emptyList()
         )
     } finally {
         tmp.delete()
@@ -229,7 +252,7 @@ fun SakuraPatchLabScreen(
                 val status = when {
                     patch.isUniversal -> "Universal"
                     !patch.compatibleWith(apk.packageName) -> "Other package"
-                    patch.supports(apk.packageName, apk.version, apk.versionCode) -> "Compatible"
+                    patch.supports(apk.packageName, apk.version, apk.versionCode) -> "Package/version match"
                     else -> "Version mismatch"
                 }
                 SakuraPatchCheck(
@@ -240,7 +263,7 @@ fun SakuraPatchLabScreen(
                         ?.take(3)?.joinToString(", ").orEmpty()
                 )
             }
-        }.sortedWith(compareBy({ it.status != "Compatible" }, { it.status != "Universal" }, { it.title }))
+        }.sortedWith(compareBy({ it.status != "Package/version match" }, { it.status != "Universal" }, { it.title }))
     }
 
     val shownChecks = remember(checks, filter, search) {
@@ -274,6 +297,10 @@ fun SakuraPatchLabScreen(
             appendLine("Manifest: " + apk.hasManifest + "; resources: " + apk.hasResources)
             appendLine("Requested permissions:")
             apk.permissions.forEach { appendLine(" - " + it) }
+            appendLine("Signing certificates (SHA-256): " + apk.certificates.joinToString())
+            apk.components.forEach { appendLine("Component: $it") }
+            apk.inspectionNotes.forEach { appendLine("Inspection: $it") }
+            appendLine("Indexed methods: " + apk.methods.size)
             appendLine("Metadata compatibility checks: " + checks.size)
             checks.forEach { appendLine(" - " + it.source + " / " + it.title + " / " + it.status) }
             comparison?.let { other ->
@@ -282,6 +309,19 @@ fun SakuraPatchLabScreen(
                 val changedPaths = apk.entryIndex.keys.intersect(other.entryIndex.keys)
                     .count { apk.entryIndex[it] != other.entryIndex[it] }
                 appendLine("Comparison APK: " + other.fileName)
+                appendLine("Certificates changed: " + (apk.certificates != other.certificates))
+                (other.components - apk.components).forEach { appendLine("+ Component: $it") }
+                (apk.components - other.components).forEach { appendLine("- Component: $it") }
+                val addedMethods = other.methods.keys - apk.methods.keys
+                val removedMethods = apk.methods.keys - other.methods.keys
+                val changedMethods = apk.methods.keys.intersect(other.methods.keys).filter { apk.methods[it] != other.methods[it] }
+                appendLine("Methods: +${addedMethods.size} -${removedMethods.size}; changed instruction bytes: ${changedMethods.size}")
+                addedMethods.take(200).forEach { appendLine("+ Method: $it") }
+                removedMethods.take(200).forEach { appendLine("- Method: $it") }
+                changedMethods.take(200).forEach { appendLine("~ Method: $it") }
+                (addedPaths + removedPaths + apk.entryIndex.keys.intersect(other.entryIndex.keys).filter { apk.entryIndex[it] != other.entryIndex[it] })
+                    .filter { it.startsWith("res/") || it == "resources.arsc" || it.startsWith("lib/") }.take(200).forEach { appendLine("Changed resource/native path: $it") }
+                appendLine("Method index is capped at 50,000; instruction hashes are index-sensitive, not a semantic equivalence proof.")
                 appendLine("Comparison SHA-256: " + other.sha256)
                 appendLine("Added ZIP paths: " + addedPaths.size)
                 appendLine("Removed ZIP paths: " + removedPaths.size)
@@ -331,7 +371,7 @@ fun SakuraPatchLabScreen(
             }
             if (primary != null && labTab == "Diff") OutlinedButton(
                 onClick = { comparePicker.launch(arrayOf("*/*")) }, enabled = !loading
-            ) { Text("Compare APK") }
+            ) { Text(stringResource(R.string.sakura_ui_compare_apk)) }
         }
         if (loading) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
@@ -403,6 +443,7 @@ fun SakuraPatchLabScreen(
                     Text(apk.fileName, style = MaterialTheme.typography.titleMedium)
                     Text(apk.packageName, style = MaterialTheme.typography.bodySmall)
                     Text("Version: " + (apk.version ?: "unknown") + " (" + apk.versionCode + ")")
+                    apk.inspectionNotes.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
                     Text("APK size: " + (apk.bytes / 1024 / 1024) + " MB")
                     Text("Local scan time: " + apk.scanDurationMs + " ms")
                     Text("SHA-256: " + apk.sha256, style = MaterialTheme.typography.bodySmall, fontFamily = SakuraMono)
@@ -424,7 +465,7 @@ fun SakuraPatchLabScreen(
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Patch compatibility", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        checks.count { it.status == "Compatible" }.toString() + " version-matched • " +
+                        checks.count { it.status == "Package/version match" }.toString() + " version-matched • " +
                             checks.count { it.status == "Universal" } + " universal • " +
                             checks.count { it.status == "Other package" } + " other-package",
                         style = MaterialTheme.typography.bodyMedium
@@ -440,14 +481,14 @@ fun SakuraPatchLabScreen(
             if (checks.isNotEmpty()) {
                 OutlinedTextField(
                     value = search, onValueChange = { search = it },
-                    label = { Text("Find a patch or source") },
+                    label = { Text(stringResource(R.string.sakura_ui_find_a_patch_or_source)) },
                     singleLine = true, modifier = Modifier.fillMaxWidth()
                 )
                 Row(
                     Modifier.horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    listOf("All", "Compatible", "Universal", "Other package", "Version mismatch").forEach { kind ->
+                    listOf("All", "Package/version match", "Universal", "Other package", "Version mismatch").forEach { kind ->
                         FilterChip(selected = filter == kind, onClick = { filter = kind }, label = { Text(kind) })
                     }
                 }
@@ -468,7 +509,7 @@ fun SakuraPatchLabScreen(
                     style = MaterialTheme.typography.bodySmall
                 )
             } else {
-                Text("No loaded patch metadata yet. Add or update patch sources in the Sources tab.")
+                Text(stringResource(R.string.sakura_ui_no_loaded_patch_metadata_yet_add_or_update_patch_sources_in_the_s))
             }
 
             }
@@ -476,8 +517,7 @@ fun SakuraPatchLabScreen(
             if (comparison == null) {
                 Card {
                     Text(
-                        "Select Compare APK above to inspect ZIP entry changes and " +
-                            "new or removed Android permissions. This isn't a DEX semantic diff.",
+                        "Select Compare APK to compare components, permissions, certificates, method instruction hashes, resources, and native libraries.",
                         modifier = Modifier.padding(16.dp)
                     )
                 }
@@ -495,6 +535,11 @@ fun SakuraPatchLabScreen(
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text("Sakura Diff - archive comparison", style = MaterialTheme.typography.titleMedium)
                         Text(apk.fileName + " ↔ " + other.fileName)
+                        Text("Certificates changed: " + (apk.certificates != other.certificates))
+                        Text("Components added: ${(other.components - apk.components).size}; removed: ${(apk.components - other.components).size}")
+                        Text("Methods added: ${(other.methods.keys - apk.methods.keys).size}; removed: ${(apk.methods.keys - other.methods.keys).size}")
+                        Text("Methods with changed instruction bytes: " + apk.methods.keys.intersect(other.methods.keys).count { apk.methods[it] != other.methods[it] })
+                        Text("Method inspection is capped at 50,000. Instruction hashes can change when DEX indexes change. Export the report for method names and resource/native paths.", style = MaterialTheme.typography.bodySmall)
                         Text("Added paths: " + added.size)
                         Text("Removed paths: " + removed.size)
                         Text("Changed ZIP CRC / size: " + changed)
@@ -511,7 +556,7 @@ fun SakuraPatchLabScreen(
                             style = MaterialTheme.typography.bodySmall
                         )
                         if (apk.entriesCount > 20000 || other.entriesCount > 20000) {
-                            Text("Archive index capped at 20,000 entries per APK.")
+                            Text(stringResource(R.string.sakura_ui_archive_index_capped_at_20_000_entries_per_apk))
                         }
                         Text("Example changes:", style = MaterialTheme.typography.labelLarge)
                         (added.take(5).map { "+ " + it } + removed.take(5).map { "- " + it })
@@ -539,10 +584,10 @@ fun SakuraPatchLabScreen(
                 OutlinedButton(onClick = {
                     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                     clipboard.setPrimaryClip(ClipData.newPlainText("Sakura PatchLab report", report))
-                }) { Text("Copy diagnostic report") }
+                }) { Text(stringResource(R.string.sakura_ui_copy_diagnostic_report)) }
                 OutlinedButton(onClick = {
                     reportExportLauncher.launch("sakura-patchlab-report.txt")
-                }) { Text("Export report (.txt)") }
+                }) { Text(stringResource(R.string.sakura_ui_export_report_txt)) }
             }
         }
     }

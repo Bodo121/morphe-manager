@@ -415,12 +415,12 @@ class MorpheAPI(
 
     /** Returns true if [asset] looks like an Android APK by name or content-type. */
     private fun isManagerAsset(asset: GitHubAsset): Boolean =
-        asset.name.endsWith(".apk", ignoreCase = true) ||
-                asset.contentType?.contains("android.package-archive", ignoreCase = true) == true
+        asset.name == if (BuildConfig.APPLICATION_ID == "app.morphe.manager")
+            "SakuraPatcher-legacy-migration.apk" else "SakuraPatcher-release.apk"
 
     /** True when the currently installed manager is a dev/pre-release build. */
     val isDevBuild: Boolean
-        get() = BuildConfig.VERSION_NAME.contains('-')
+        get() = BuildConfig.DEBUG
 
     /** Fetches the latest manager release metadata from GitHub Releases. */
     private suspend fun getManagerFromGitHub(): APIResponse<MorpheAsset> {
@@ -488,7 +488,7 @@ class MorpheAPI(
         // channel offers stable builds alone: merging dev into main carries the dev release file
         // along, and it stays there until the stable release replaces it
         val update = candidate?.takeIf {
-            (usePrereleases || !it.version.contains('-')) &&
+            (usePrereleases || !it.version.contains('-') || Regex("^v?\\d+\\.\\d+\\.\\d+-sakura\\.\\d+$").matches(it.version)) &&
                     isNewerVersion(BuildConfig.VERSION_NAME, it.version)
         } ?: return null
 

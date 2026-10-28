@@ -67,6 +67,19 @@ fun PatcherScreen(
     onDeclineTour: () -> Unit = {},
     onChangePatches: () -> Unit = {}
 ) {
+    if (patcherViewModel.readyToBuild) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = onBackClick,
+            title = { androidx.compose.material3.Text(stringResource(R.string.sakura_ready_title)) },
+            text = { androidx.compose.foundation.lazy.LazyColumn { item { androidx.compose.material3.Text(patcherViewModel.readySummary) } } },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = { patcherViewModel.startReviewedBuild(false) }) { androidx.compose.material3.Text(stringResource(R.string.sakura_build_action)) }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { patcherViewModel.startReviewedBuild(true) }) { androidx.compose.material3.Text(stringResource(R.string.sakura_dry_run)) }
+            }
+        )
+    }
     // Worn by everything the screen shows, its dialogs included, down to the install button
     ProvideAccent(rememberAppColor(patcherViewModel.packageName)) {
         PatcherScreenContent(

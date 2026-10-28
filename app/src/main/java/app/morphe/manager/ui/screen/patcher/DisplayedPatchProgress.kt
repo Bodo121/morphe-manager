@@ -12,7 +12,7 @@ import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import app.morphe.manager.ui.screen.shared.rememberAccessibilityEnabled
+import app.morphe.manager.ui.screen.shared.rememberReducedMotion
 import app.morphe.manager.util.tag
 import kotlinx.coroutines.delay
 import kotlin.math.exp
@@ -71,28 +71,7 @@ fun rememberDisplayedPatchProgress(
                 }
             }
 
-            if (actualProgress >= MAX_OVERESTIMATED_PROGRESS) {
-                displayProgress = actualProgress
-            } else {
-                // Overestimate the progress by about 1% per second, but decays to
-                // adding smaller adjustments each second until the current step completes
-                fun overEstimateProgressAdjustment(secondsElapsed: Double): Double {
-                    // Sigmoid curve. Give larger correct soon after the step starts but then flattens off
-                    val maximumValue = 25.0 // Up to 25% over correct
-                    val timeConstant = 50.0 // Larger value = longer time until plateau
-                    return maximumValue * (1 - exp(-secondsElapsed / timeConstant))
-                }
-
-                val secondsSinceStepStarted = (now - currentStepStartTime) / 1000.0
-                val overEstimatedProgress = min(
-                    MAX_OVERESTIMATED_PROGRESS,
-                    actualProgress + 0.01 * overEstimateProgressAdjustment(secondsSinceStepStarted)
-                ).toFloat()
-
-                // Don't allow rolling back the progress if it went over,
-                // and don't go over 98% unless the actual progress is that far
-                displayProgress = max(displayProgress, overEstimatedProgress)
-            }
+            displayProgress = actualProgress.coerceIn(0f, 1f)
 
             // Update four times a second
             delay(250.milliseconds)
@@ -106,7 +85,7 @@ fun rememberDisplayedPatchProgress(
 
     // Skip the 1.5s tween on every progress tick when TalkBack is active so the main thread
     // isn't constantly busy interpolating and can serve accessibility events instead
-    val reduceMotion = rememberAccessibilityEnabled()
+    val reduceMotion = rememberReducedMotion()
     val shown = animateFloatAsState(
         targetValue = displayProgress,
         animationSpec = if (reduceMotion) snap() else tween(durationMillis = 1500, easing = FastOutSlowInEasing),

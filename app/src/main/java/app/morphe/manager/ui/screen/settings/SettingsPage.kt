@@ -88,6 +88,7 @@ fun SettingsPage(
                     if (!settingsSearch.isActive) {
                         SakuraThemePicker(settingsViewModel.prefs)
                         SakuraPerformancePicker(settingsViewModel.prefs)
+                        SakuraMotionSettings(settingsViewModel.prefs)
                     }
                     GeneralSection(navigation.openSubpage, onboardingState)
                     PatchingSection(settingsViewModel, navigation, onboardingState)
@@ -179,6 +180,7 @@ private fun PatchingSection(
             SubpageItem(SettingsSubpage.PATCHER, navigation.openSubpage)
             SubpageItem(SettingsSubpage.PATCH_LAB, navigation.openSubpage)
             SubpageItem(SettingsSubpage.PROFILES, navigation.openSubpage)
+            SubpageItem(SettingsSubpage.BUILD_WORKSPACE, navigation.openSubpage)
         }
     }
 }

@@ -21,5 +21,6 @@ class SettingsNavigation(
     val openSubpage: (SettingsSubpage) -> Unit,
     val openPatchSelections: () -> Unit,
     val openLicenses: () -> Unit,
-    val startTour: (() -> Unit)?
+    val startTour: (() -> Unit)?,
+    val startBuild: (app.morphe.manager.ui.model.navigation.Patcher.ViewModelParams) -> Unit
 )

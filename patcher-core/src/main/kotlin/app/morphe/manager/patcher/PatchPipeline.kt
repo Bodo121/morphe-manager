@@ -54,6 +54,7 @@ class PatchPipeline(
                 bundle.options.mapValues { (_, options) -> options.mapValues { (_, value) -> optionValueFromJson(value) } },
                 logger
             )
+            require(patches.keys.containsAll(bundle.patches)) { "Selected patches are missing from source ${bundle.uid}. Review the recipe before patching." }
             patches.filterKeys { it in bundle.patches }.values
         }
         listener.stepCompleted() // Loading patches
@@ -91,7 +92,7 @@ class PatchPipeline(
                 input = input,
                 keepArchitectures = keepArchitectures,
                 listener = listener
-            ).use { it.run(File(request.outputFile), patches) }
+            ).use { it.run(File(request.outputFile), patches, request.dryRun) }
         } finally {
             preparation.cleanup()
         }
