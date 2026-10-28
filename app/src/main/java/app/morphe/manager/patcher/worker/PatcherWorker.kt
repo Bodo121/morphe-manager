@@ -81,7 +81,6 @@ class PatcherWorker(
     private val rootInstaller: RootInstaller,
     private val installerManager: InstallerManager,
     private val patchBundleRepository: PatchBundleRepository,
-    private val prefs: PreferencesManager,
     private val patcherProcesses: PatcherProcesses
 ) : Worker<PatcherWorker.Args>(context, parameters) {
     private fun runtime(vm: PatcherVm) =
