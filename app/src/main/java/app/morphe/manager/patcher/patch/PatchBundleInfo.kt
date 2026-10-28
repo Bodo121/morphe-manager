@@ -58,8 +58,8 @@ sealed class PatchBundleInfo {
         /**
          * Create a [PatchBundleInfo.Scoped] that only contains information about patches that are relevant for a specific [packageName].
          */
-        fun forPackage(packageName: String, version: String?, versionCode: Long? = null, compatibilityPackage: String = packageName): Scoped {
-            val forThisPackage = patches.filter { it.compatibleWith(compatibilityPackage) }
+        fun forPackage(packageName: String, version: String?, versionCode: Long? = null, compatibilityPackage: String = packageName, allowAllPackages: Boolean = false): Scoped {
+            val forThisPackage = patches.filter { allowAllPackages || it.compatibleWith(compatibilityPackage) }
             // Selections are stored per app, so a name only has to be unique within this list
             val keys = uniqueNames(forThisPackage)
             val relevantPatches = forThisPackage.mapIndexed { index, patch ->
@@ -81,7 +81,7 @@ sealed class PatchBundleInfo {
                 // Categorise into compatible / incompatible / universal
                 val targetList = when {
                     patch.compatiblePackages == null -> universal
-                    patch.supports(compatibilityPackage, version, versionCode) -> compatible
+                    (allowAllPackages || patch.supports(compatibilityPackage, version, versionCode)) -> compatible
                     else -> incompatible
                 }
                 targetList.add(patch)
