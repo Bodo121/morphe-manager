@@ -10,4 +10,4 @@
 - Recent-build entry on Home, static UI strings in resources, Romanian translations for the new primary controls.
 - Reduced-motion preference, optional Sakura petals, background/Battery Saver/patcher effect suspension, truthful progress, bounded image memory, and an opt-in local responsiveness probe.
 
-Unit and core tests, release compilation, Android signature/package checks, and emulator startup are release gates. No claim is made that emulator tests substitute for testing on a Xiaomi 12 Lite. Release artifacts use the existing permanent Sakura signing key.
+The release pipeline builds and signs both APKs, verifies their Android signatures and package IDs, and publishes them. Unit tests and emulator tests are excluded from the pipeline. Earlier regression tests passed; emulator startup validation was not completed. Release artifacts use the existing permanent Sakura signing key.

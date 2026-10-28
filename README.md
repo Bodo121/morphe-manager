@@ -19,7 +19,7 @@
 
 ## Building
 
-The [SakuraPatcher release workflow](https://github.com/Bodo121/morphe-manager/actions/workflows/sakura_signed_release.yml) runs the roadmap regression tests, builds permanent-key signed release APKs, verifies their package identities and signatures, and runs an emulator startup check before publication. The primary app uses `app.sakura.patcher`; the legacy migration bridge uses `app.morphe.manager`. See the migration guide before moving an existing installation.
+The [SakuraPatcher release workflow](https://github.com/Bodo121/morphe-manager/actions/workflows/sakura_signed_release.yml) builds permanent-key signed release APKs, verifies their package identities and signatures, and publishes them without unit-test or emulator jobs. The primary app uses `app.sakura.patcher`; the legacy migration bridge uses `app.morphe.manager`. See the migration guide before moving an existing installation.
 
 ## Acknowledgments and licensing
 

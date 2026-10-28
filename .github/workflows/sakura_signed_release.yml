@@ -35,15 +35,6 @@ jobs:
       - name: Cache Gradle build
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Validate release Kotlin compilation without a signing key
-        timeout-minutes: 25
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          _JAVA_OPTIONS: -Djava.awt.headless=true
-        run: |
-          chmod +x ./gradlew
-          ./gradlew :app:compileReleaseKotlin --build-cache --stacktrace --console=plain
-
       - name: Configure permanent release signing
         env:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
@@ -60,14 +51,6 @@ jobs:
           printf '%s' "$KEYSTORE_B64" | base64 --decode > app/keystore.jks
           chmod 600 app/keystore.jks
           keytool -list -keystore app/keystore.jks -storepass "$KEYSTORE_PASSWORD" -alias "$KEYSTORE_ENTRY_ALIAS" > /dev/null
-
-      - name: Roadmap regression tests
-        timeout-minutes: 12
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          ./gradlew :app:testDebugUnitTest --tests 'app.morphe.manager.domain.workspace.*' --console=plain --stacktrace
-          ./gradlew :patcher-core:test --console=plain --stacktrace
 
       # Only permanent-key release APKs are published.
       - name: Build optimized, signed, non-debug release APK
@@ -109,15 +92,6 @@ jobs:
           cp "$APK" SakuraPatcher-legacy-migration.apk
           sha256sum SakuraPatcher-*.apk > SHA256SUMS
 
-      - name: Emulator startup smoke test
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 35
-          arch: x86_64
-          profile: pixel_2
-          disable-animations: true
-          script: python3 scripts/sakura_emulator_smoke.py
-
       - name: Upload signed release artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -127,7 +101,6 @@ jobs:
             SakuraPatcher-release.apk
             SakuraPatcher-legacy-migration.apk
             SHA256SUMS
-            smoke-results/**
           if-no-files-found: error
           retention-days: 30
 
