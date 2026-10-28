@@ -24,6 +24,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import app.morphe.manager.ui.theme.SakuraMono
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.morphe.manager.domain.manager.PreferencesManager
 import app.morphe.manager.domain.repository.PatchBundleRepository
@@ -391,7 +392,7 @@ fun SakuraPatchLabScreen(
                     Text("Version: " + (apk.version ?: "unknown") + " (" + apk.versionCode + ")")
                     Text("APK size: " + (apk.bytes / 1024 / 1024) + " MB")
                     Text("Local scan time: " + apk.scanDurationMs + " ms")
-                    Text("SHA-256: " + apk.sha256, style = MaterialTheme.typography.bodySmall)
+                    Text("SHA-256: " + apk.sha256, style = MaterialTheme.typography.bodySmall, fontFamily = SakuraMono)
                     Text("DEX: " + apk.dexCount + "  •  Native libraries: " + apk.nativeLibraryCount)
                     Text("DEX method IDs: " + apk.dexHeaders.sumOf { it.methodIds })
                     Text("DEX class definitions: " + apk.dexHeaders.sumOf { it.classDefs })
@@ -514,7 +515,7 @@ fun SakuraPatchLabScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text("Local diagnostic report", style = MaterialTheme.typography.titleMedium)
-                        Text(report, style = MaterialTheme.typography.bodySmall)
+                        Text(report, style = MaterialTheme.typography.bodySmall, fontFamily = SakuraMono)
                         Text(
                             "These checks do not prove bytecode fingerprint compatibility.",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,

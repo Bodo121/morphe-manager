@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
+import app.morphe.manager.ui.theme.SakuraMono
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -754,7 +755,7 @@ private fun ExpertLogPanel(
                                                     else R.string.patcher_logs_waiting
                                                 ),
                                                 style = MaterialTheme.typography.bodySmall
-                                                    .copy(fontFamily = FontFamily.Monospace),
+                                                    .copy(fontFamily = SakuraMono),
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                                     .copy(alpha = 0.45f),
                                                 textAlign = TextAlign.Center
@@ -1079,13 +1080,13 @@ private fun BannerFieldCell(
             text = label.uppercase(),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-            fontSize = 9.sp, fontFamily = FontFamily.Monospace
+            fontSize = 9.sp, fontFamily = SakuraMono
         )
 
         Text(
             text = value,
             style = MaterialTheme.typography.bodySmall,
-            fontFamily = FontFamily.Monospace,
+            fontFamily = SakuraMono,
             fontWeight = FontWeight.Medium,
             color = valueColor ?: MaterialTheme.colorScheme.onSurface,
             fontSize = 11.sp,
@@ -1114,7 +1115,7 @@ private fun LogEntryRow(level: LogLevel, message: String) {
             Text(
                 text = level.logBadge,
                 style = MaterialTheme.typography.labelSmall,
-                fontFamily = FontFamily.Monospace,
+                fontFamily = SakuraMono,
                 fontWeight = FontWeight.Bold,
                 color = colors.text,
                 modifier = Modifier.padding(horizontal = Defaults.SpaceExtraSmall, vertical = 2.dp),
@@ -1125,7 +1126,7 @@ private fun LogEntryRow(level: LogLevel, message: String) {
         Text(
             text = message,
             style = MaterialTheme.typography.bodySmall,
-            fontFamily = FontFamily.Monospace,
+            fontFamily = SakuraMono,
             color = colors.text.copy(alpha = 0.85f),
             lineHeight = 17.sp,
             fontSize = 12.sp
