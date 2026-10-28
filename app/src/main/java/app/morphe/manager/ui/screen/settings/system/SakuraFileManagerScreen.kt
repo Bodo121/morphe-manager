@@ -287,7 +287,7 @@ fun SakuraFileManagerScreen() {
                         Row(Modifier.fillMaxWidth().padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Icon(if (item.directory) MaterialSymbols.Rounded.Folder else MaterialSymbols.Rounded.Insert_drive_file,
+                            Icon(if (item.directory) MaterialSymbols.Rounded.Folder else MaterialSymbols.Rounded.Article,
                                 contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             Column(Modifier.weight(1f)) {
                                 Text(item.title, maxLines = 1, overflow = TextOverflow.Ellipsis,
