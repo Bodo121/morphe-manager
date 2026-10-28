@@ -1569,4 +1569,6 @@ Do you still want to continue?"</string>
     <string name="sakura_nav_home">Home</string>
     <string name="sakura_nav_patcher">Patcher</string>
     <string name="sakura_nav_lab">PatchLab</string>
+    <string name="sakura_profiles_title">Sakura Profiles</string>
+    <string name="sakura_profiles_summary">Save, import, export and validate named patch configurations</string>
 </resources>

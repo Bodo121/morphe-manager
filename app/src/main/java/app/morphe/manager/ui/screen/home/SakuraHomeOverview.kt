@@ -63,7 +63,7 @@ internal fun SakuraHomeOverview(
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             SakuraQuickAction("Patch sources", "Manage bundles", MaterialSymbols.Rounded.Folder_code,
                 onSources, Modifier.weight(1f))
-            SakuraQuickAction("Saved selections", "Reuse patch choices", MaterialSymbols.Rounded.Apps,
+            SakuraQuickAction("Patch profiles", "Save and restore choices", MaterialSymbols.Rounded.Apps,
                 onSelections, Modifier.weight(1f))
         }
         Text("APPLICATIONS", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,

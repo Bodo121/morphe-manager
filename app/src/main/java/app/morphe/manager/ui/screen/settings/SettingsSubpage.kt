@@ -46,6 +46,12 @@ enum class SettingsSubpage(
         R.string.onboarding_system_installer_desc,
         MaterialSymbols.Rounded.Install_mobile
     ),
+    PROFILES(
+        R.string.sakura_profiles_title,
+        R.string.sakura_profiles_summary,
+        MaterialSymbols.Rounded.Apps,
+        searchable = false
+    ),
     PATCH_LAB(
         R.string.sakura_patchlab_title,
         R.string.sakura_patchlab_summary,

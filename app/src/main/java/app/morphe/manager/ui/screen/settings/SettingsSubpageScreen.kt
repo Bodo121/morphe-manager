@@ -16,6 +16,7 @@ import androidx.compose.ui.res.stringResource
 import app.morphe.manager.ui.screen.settings.advanced.PatchOptionsSection
 import app.morphe.manager.ui.screen.settings.advanced.PatcherSettings
 import app.morphe.manager.ui.screen.settings.advanced.SakuraPatchLabScreen
+import app.morphe.manager.ui.screen.settings.advanced.SakuraProfilesScreen
 import app.morphe.manager.ui.screen.settings.system.AboutSettings
 import app.morphe.manager.ui.screen.settings.system.ApkDownloadHelpersSettings
 import app.morphe.manager.ui.screen.settings.system.InstallerSettings
@@ -40,11 +41,12 @@ fun SettingsSubpageScreen(
 ) {
     // PatchLab contains its own large scrollable diagnostic report. Avoid nesting that
     // scroll container inside SubpageScaffold's verticalScroll (infinite constraints).
-    if (subpage == SettingsSubpage.PATCH_LAB) {
+    if (subpage == SettingsSubpage.PATCH_LAB || subpage == SettingsSubpage.PROFILES) {
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
             TextButton(onClick = onBack) { Text("‹ Back to settings") }
             Box(Modifier.weight(1f)) {
-                SakuraPatchLabScreen()
+                if (subpage == SettingsSubpage.PROFILES) SakuraProfilesScreen()
+                else SakuraPatchLabScreen()
             }
         }
         return
@@ -68,6 +70,7 @@ internal fun SettingsSubpageContent(
         SettingsSubpage.INSTALLER -> InstallerSettings()
         SettingsSubpage.PATCHER -> PatcherSettings()
         SettingsSubpage.PATCH_LAB -> SakuraPatchLabScreen()
+        SettingsSubpage.PROFILES -> SakuraProfilesScreen()
         SettingsSubpage.STORAGE -> StorageSettings()
         SettingsSubpage.APK_DOWNLOAD_HELPERS -> ApkDownloadHelpersSettings()
         SettingsSubpage.ABOUT -> AboutSettings(

@@ -171,6 +171,7 @@ private fun PatchingSection(
             )
             SubpageItem(SettingsSubpage.PATCHER, navigation.openSubpage)
             SubpageItem(SettingsSubpage.PATCH_LAB, navigation.openSubpage)
+            SubpageItem(SettingsSubpage.PROFILES, navigation.openSubpage)
         }
     }
 }

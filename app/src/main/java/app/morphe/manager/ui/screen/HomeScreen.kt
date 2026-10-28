@@ -382,7 +382,7 @@ fun HomeScreen(
                 onOpenApps = { openPage(MainPage.APPS) },
                 onOpenPatchLab = { openPage(MainPage.PATCH_LAB) },
                 onOpenSources = { openPage(MainPage.SOURCES) },
-                onOpenSelections = settingsNavigation.openPatchSelections,
+                onOpenSelections = { settingsNavigation.openSubpage(app.morphe.manager.ui.screen.settings.SettingsSubpage.PROFILES) },
                 onStartBatch = { if (repatchableApps.isNotEmpty()) startBatchPatch(repatchableApps) }
             )
 
@@ -502,7 +502,7 @@ fun HomeScreen(
                         },
                         onOpenSources = { openPage(MainPage.SOURCES) },
                         onOpenPatchLab = { openPage(MainPage.PATCH_LAB) },
-                        onOpenSelections = settingsNavigation.openPatchSelections,
+                        onOpenSelections = { settingsNavigation.openSubpage(app.morphe.manager.ui.screen.settings.SettingsSubpage.PROFILES) },
                         onOpenAppearance = { settingsNavigation.openSubpage(app.morphe.manager.ui.screen.settings.SettingsSubpage.APPEARANCE) },
                         onRefreshGreeting = onRefresh,
                         onHideMoreAppsCard = { scope.launch { prefs.showMoreAppsCard.update(false) } }

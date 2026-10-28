@@ -108,3 +108,11 @@ The following are source-code changes, **not yet an end-to-end validated release
 - [x] Safe UI mode hides experimental Patcher/PatchLab tabs and the redesigned Home dashboard while keeping regular app/source/settings flows.
 - [x] Normal app-card solid colors return a stable three-stop palette to preserve downstream assumptions.
 - [ ] Determine the **actual device crash stack trace** and verify launch on HyperOS and a clean Android emulator; the changes above are preventative and diagnostic, not proof of a fixed root cause.
+
+## Native named patch profiles: first implementation
+
+- [x] Profile snapshots capture per-app patch selections, source names and serialized patch options in a local atomic JSON file.
+- [x] Native Settings page to save, restore with source/name validation, delete, and import/export JSON files.
+- [x] Profiles are exposed in Settings and the Home shortcut. Existing expert selections remain accessible.
+- [ ] Add one-tap profile selection directly to the per-app patch sheet, user-defined profile sorting and package/version metadata.
+- [ ] Test profile migrations, source refreshes and options recovery on physical devices.
