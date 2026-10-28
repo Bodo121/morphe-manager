@@ -99,6 +99,9 @@ class PreferencesManager(
     // Experimental: choose which package's patch metadata to use for another APK.
     val allowCrossPackagePatches = booleanPreference("allow_cross_package_patches", false)
 
+    /** Remember the last batch installation policy for the next new queue. */
+    val batchInstallWhenFinished = booleanPreference("batch_install_when_finished", false)
+
     // Advanced tab
     val useManagerPrereleases = booleanPreference("manager_prereleases", false)
 

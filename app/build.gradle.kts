@@ -444,7 +444,7 @@ tasks {
  * of that icon would lose it on update. A background's color can change freely.
  */
 val launcherIconMarks = linkedMapOf(
-    "color" to "ic_launcher_foreground",
+    "color" to "sakura_app_icon",
     "white" to "ic_launcher_foreground_white",
     "black" to "ic_launcher_foreground_black"
 )

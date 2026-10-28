@@ -136,7 +136,7 @@ class BatchPatchCoordinator(
                     val saved = if (hasPlanned) null else decodeQueue(prefs.batchQueue.get())
                     planFresh(
                         targets = (saved?.targets.orEmpty() + targets).distinctBy { it.id },
-                        policy = saved?.policy ?: BatchInstallPolicy.SAVE_ONLY,
+                        policy = saved?.policy ?: if (prefs.batchInstallWhenFinished.get()) BatchInstallPolicy.INSTALL_AFTER else BatchInstallPolicy.SAVE_ONLY,
                         excludedIds = saved?.excluded.orEmpty()
                     )
                 }
@@ -319,6 +319,7 @@ class BatchPatchCoordinator(
 
     fun setPolicy(policy: BatchInstallPolicy) {
         _state.update { it.copy(policy = policy) }
+        scope.launch { prefs.batchInstallWhenFinished.update(policy == BatchInstallPolicy.INSTALL_AFTER) }
     }
 
     fun markAutoInstallStarted() {
