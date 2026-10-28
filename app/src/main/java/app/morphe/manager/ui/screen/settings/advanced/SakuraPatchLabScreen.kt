@@ -32,6 +32,7 @@ import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
 import java.io.File
 import java.io.IOException
+import java.security.MessageDigest
 import java.util.zip.ZipFile
 
 private data class SakuraApkScan(
@@ -40,6 +41,7 @@ private data class SakuraApkScan(
     val version: String?,
     val versionCode: Long,
     val bytes: Long,
+    val sha256: String,
     val entriesCount: Int,
     val entryIndex: Map<String, Pair<Long, Long>>,
     val dexCount: Int,
@@ -68,6 +70,7 @@ private fun inspectSakuraApk(context: Context, uri: Uri): SakuraApkScan {
     val tmp = File.createTempFile("sakura-lab-", ".apk", context.cacheDir)
     try {
         var bytes = 0L
+        val digest = MessageDigest.getInstance("SHA-256")
         val source = context.contentResolver.openInputStream(uri)
             ?: throw IOException("Cannot open this APK")
         source.use { input ->
@@ -77,6 +80,7 @@ private fun inspectSakuraApk(context: Context, uri: Uri): SakuraApkScan {
                     val read = input.read(buffer)
                     if (read < 0) break
                     bytes += read
+                    digest.update(buffer, 0, read)
                     if (bytes > 1024L * 1024L * 1024L) {
                         throw IOException("The APK exceeds the 1 GB inspection limit")
                     }
@@ -118,6 +122,7 @@ private fun inspectSakuraApk(context: Context, uri: Uri): SakuraApkScan {
                 packageInfo.versionCode.toLong()
             },
             bytes = bytes,
+            sha256 = digest.digest().joinToString("") { "%02x".format(it) },
             entriesCount = count,
             entryIndex = files,
             dexCount = dex,
@@ -212,6 +217,7 @@ fun SakuraPatchLabScreen(
             appendLine("Package: " + apk.packageName)
             appendLine("Version: " + (apk.version ?: "unknown") + " (" + apk.versionCode + ")")
             appendLine("Size: " + apk.bytes + " bytes")
+            appendLine("SHA-256: " + apk.sha256)
             appendLine("DEX: " + apk.dexCount + "; native .so: " + apk.nativeLibraryCount)
             appendLine("ZIP entries: " + apk.entriesCount)
             appendLine("Manifest: " + apk.hasManifest + "; resources: " + apk.hasResources)
@@ -274,6 +280,7 @@ fun SakuraPatchLabScreen(
                     Text(apk.packageName, style = MaterialTheme.typography.bodySmall)
                     Text("Version: " + (apk.version ?: "unknown") + " (" + apk.versionCode + ")")
                     Text("APK size: " + (apk.bytes / 1024 / 1024) + " MB")
+                    Text("SHA-256: " + apk.sha256, style = MaterialTheme.typography.bodySmall)
                     Text("DEX: " + apk.dexCount + "  •  Native libraries: " + apk.nativeLibraryCount)
                     Text("Archive entries: " + apk.entriesCount)
                     Text("Manifest: " + if (apk.hasManifest) "Present" else "Missing")
@@ -337,6 +344,8 @@ fun SakuraPatchLabScreen(
 
             if (comparison != null) {
                 val other = comparison!!
+                val addedPermissions = other.permissions.toSet() - apk.permissions.toSet()
+                val removedPermissions = apk.permissions.toSet() - other.permissions.toSet()
                 val added = other.entryIndex.keys - apk.entryIndex.keys
                 val removed = apk.entryIndex.keys - other.entryIndex.keys
                 val changed = apk.entryIndex.keys.intersect(other.entryIndex.keys).count {
@@ -349,6 +358,10 @@ fun SakuraPatchLabScreen(
                         Text("Added paths: " + added.size)
                         Text("Removed paths: " + removed.size)
                         Text("Changed ZIP CRC / size: " + changed)
+                        Text("New requested permissions: " + addedPermissions.size)
+                        Text("Removed requested permissions: " + removedPermissions.size)
+                        addedPermissions.take(6).forEach { Text("+ " + it, style = MaterialTheme.typography.bodySmall) }
+                        removedPermissions.take(6).forEach { Text("- " + it, style = MaterialTheme.typography.bodySmall) }
                         Text(
                             "This compares ZIP entry metadata only. It is not a DEX semantic diff or security audit.",
                             style = MaterialTheme.typography.bodySmall
