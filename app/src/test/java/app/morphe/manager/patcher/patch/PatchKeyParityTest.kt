@@ -41,6 +41,21 @@ class PatchKeyParityTest {
         patches.keyedFor(app).mapValues { (_, patch) -> patch.description }
 
     @Test
+    fun `cross-package override preserves key parity without changing the target package`() {
+        val patches = listOf(
+            patch("Feature", "original app", app),
+            patch("Feature", "another app", "com.other"),
+            patch("Utility", "universal", null)
+        )
+        val unfiltered = patches.map(::PatchInfo)
+        val listed = uniqueNames(unfiltered).zip(unfiltered.map { it.description }).toMap()
+        val resolved = patches.keyedFor(app, allowAllPackages = true)
+            .mapValues { (_, patch) -> patch.description }
+        assertEquals(listed, resolved)
+        assertEquals(2, patches.keyedFor(app).size)
+    }
+
+    @Test
     fun `the app and the patcher key the same patches alike`() {
         val patches = listOf(
             patch("Ads", "universal", null),
