@@ -58,8 +58,8 @@ sealed class PatchBundleInfo {
         /**
          * Create a [PatchBundleInfo.Scoped] that only contains information about patches that are relevant for a specific [packageName].
          */
-        fun forPackage(packageName: String, version: String?, versionCode: Long? = null): Scoped {
-            val forThisPackage = patches.filter { it.compatibleWith(packageName) }
+        fun forPackage(packageName: String, version: String?, versionCode: Long? = null, compatibilityPackage: String = packageName): Scoped {
+            val forThisPackage = patches.filter { it.compatibleWith(compatibilityPackage) }
             // Selections are stored per app, so a name only has to be unique within this list
             val keys = uniqueNames(forThisPackage)
             val relevantPatches = forThisPackage.mapIndexed { index, patch ->
@@ -81,20 +81,20 @@ sealed class PatchBundleInfo {
                 // Categorise into compatible / incompatible / universal
                 val targetList = when {
                     patch.compatiblePackages == null -> universal
-                    patch.supports(packageName, version, versionCode) -> compatible
+                    patch.supports(compatibilityPackage, version, versionCode) -> compatible
                     else -> incompatible
                 }
                 targetList.add(patch)
 
                 // Collect metadata (first non-null wins for scalar fields)
                 if (version != null && !isVersionExperimental) {
-                    isVersionExperimental = patch.isExperimental(packageName, version)
+                    isVersionExperimental = patch.isExperimental(compatibilityPackage, version)
                 }
-                if (!targetsVersion) targetsVersion = patch.targetsVersion(packageName, version)
-                if (appIconColor == null) appIconColor = patch.appIconColorFor(packageName)
-                if (apkFileType == null) apkFileType = patch.apkFileTypeFor(packageName)
-                if (displayName == null) displayName = patch.displayNameFor(packageName)
-                patch.signaturesFor(packageName)?.let { signaturesAcc.addAll(it) }
+                if (!targetsVersion) targetsVersion = patch.targetsVersion(compatibilityPackage, version)
+                if (appIconColor == null) appIconColor = patch.appIconColorFor(compatibilityPackage)
+                if (apkFileType == null) apkFileType = patch.apkFileTypeFor(compatibilityPackage)
+                if (displayName == null) displayName = patch.displayNameFor(compatibilityPackage)
+                if (compatibilityPackage == packageName) patch.signaturesFor(packageName) else null?.let { signaturesAcc.addAll(it) }
             }
 
             return Scoped(
