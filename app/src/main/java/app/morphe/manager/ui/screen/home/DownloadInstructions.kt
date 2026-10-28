@@ -124,8 +124,28 @@ private data class DownloadStep(
 @Composable
 private fun ApkDownloadSource.instructionSteps(
     requestedVersion: String?,
-    mountInstallRequired: Boolean
+    mountInstallRequired: Boolean,
+    insideSakura: Boolean
 ): List<DownloadStep> {
+    if (insideSakura) {
+        val site = destinationLabel()
+        val requested = requestedVersion?.let { "version $it" } ?: "a compatible version"
+        return listOf(
+            DownloadStep(
+                AnnotatedString("Tap the button to open $site inside Sakura."),
+                button = SiteButton.ApkMirror
+            ),
+            DownloadStep(AnnotatedString(
+                "Select $requested and the APK variant appropriate for your device."
+            )),
+            DownloadStep(AnnotatedString(
+                "Press the source website's real download link. Sakura saves the file for you."
+            )),
+            DownloadStep(AnnotatedString(
+                "When the download finishes, Sakura verifies the APK before continuing to patching. Do not install the stock APK."
+            ))
+        )
+    }
     val openSite = DownloadStep(
         AnnotatedString(
             stringResource(
@@ -259,6 +279,11 @@ internal fun DialogHostScope.DownloadInstructionsDialog(
     // Nothing can be said about the download until the redirect lands, and the link on hand
     // until then is the unfollowed one, which is exactly what must not be opened
     val resolving = source == ApkDownloadSource.Unresolved
+    val insideSakura = !resolving && source !is ApkDownloadSource.DirectFile &&
+        downloadUrl?.startsWith("https://", ignoreCase = true) == true &&
+        onDirectApkDownloaded != null
+    var showSourceBrowser by remember(downloadUrl) { mutableStateOf(false) }
+    val openSourceBrowser = { showSourceBrowser = true }
 
     // Latched for the same reason as the instructions above: dismissing the dialog withdraws the
     // helper actions at once, and a dialog that drops one mid-exit reads as a glitch
@@ -280,7 +305,7 @@ internal fun DialogHostScope.DownloadInstructionsDialog(
             AppDialogActions(
                 actions = listOfNotNull(
                     DialogAction(
-                        text = continueText,
+                        text = if (insideSakura) "Open source in browser" else continueText,
                         onClick = openLink,
                         icon = MaterialSymbols.Rounded.Open_in_new.autoMirrored,
                         enabled = !resolving
@@ -328,7 +353,8 @@ internal fun DialogHostScope.DownloadInstructionsDialog(
                 val mountInstallRequired = usingMountInstall && !stockAppInstalled
                 val steps = currentSource.instructionSteps(
                     requestedVersion = requestedVersion,
-                    mountInstallRequired = mountInstallRequired
+                    mountInstallRequired = mountInstallRequired,
+                    insideSakura = insideSakura
                 )
 
                 // On a card of their own, as the version lists before them are, numbered down a rail
@@ -360,9 +386,9 @@ internal fun DialogHostScope.DownloadInstructionsDialog(
                                         contentAlignment = Alignment.Center
                                     ) {
                                         SiteDownloadButton(
-                                            button = button,
-                                            downloadColor = downloadColor,
-                                            isApkBundle = isApkBundle
+                                            isApkBundle = isApkBundle,
+                                            sourceName = source.label ?: "source",
+                                            onClick = if (insideSakura) openSourceBrowser else openLink
                                         )
                                     }
                                 }
@@ -406,110 +432,66 @@ internal fun DialogHostScope.DownloadInstructionsDialog(
             }
         }
     }
+    if (showSourceBrowser && insideSakura && downloadUrl != null && onDirectApkDownloaded != null) {
+        SakuraApkSourceBrowser(
+            url = downloadUrl,
+            appName = appName,
+            requestedVersion = requestedVersion,
+            onDismiss = { showSourceBrowser = false },
+            onDownloaded = onDirectApkDownloaded
+        )
+    }
 }
 
 /**
- * Redraws the button the user has to find on the website.
+ * A real, native Sakura action that opens the download source.
+ * The former visual imitation only showed a toast and never downloaded anything.
  *
  * Pressing it downloads nothing, so every copy answers with the same nudge back to the website.
  */
 @Composable
 private fun SiteDownloadButton(
-    button: SiteButton,
-    downloadColor: Color,
-    isApkBundle: Boolean
+    isApkBundle: Boolean,
+    sourceName: String,
+    onClick: () -> Unit
 ) {
-    val messages = koinInject<UserMessages>()
-    val nudges = listOf(
-        stringResource(R.string.home_download_instructions_download_button_toast),
-        stringResource(R.string.home_download_instructions_download_button_toast_2),
-        stringResource(R.string.home_download_instructions_download_button_toast_3),
-        stringResource(R.string.home_download_instructions_download_button_toast_4),
-        stringResource(R.string.home_download_instructions_download_button_toast_5),
-        stringResource(R.string.home_download_instructions_download_button_toast_6),
-    )
-    var clickCount by remember { mutableIntStateOf(0) }
-    val onClick = {
-        clickCount++
-        messages.show(nudges.getOrElse(clickCount - 1) { nudges.last() }, long = true)
-    }
-
-    when (button) {
-        // APKMirror tints its download button with the app's own accent color
-        SiteButton.ApkMirror -> {
-            val buttonColor = downloadColor.ensureContrast(MaterialTheme.colorScheme.background)
-            val contentColor = buttonColor.contrastingContent()
-
-            Surface(
-                onClick = onClick,
-                shape = RoundedCornerShape(1.dp),
-                color = buttonColor
-            ) {
-                Column(
-                    modifier = Modifier.padding(horizontal = Defaults.SpaceMedium, vertical = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(Defaults.SpaceSmall),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = MaterialSymbols.RoundedFilled.Download,
-                            contentDescription = null,
-                            tint = contentColor,
-                            modifier = Modifier.size(Defaults.IconSizeSmall)
-                        )
-                        Text(
-                            text = if (isApkBundle) "DOWNLOAD APK BUNDLE" else "DOWNLOAD APK",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = contentColor
-                        )
-                    }
-
-                    // APKMirror spells out what a bundle holds on a second line, with the file
-                    // size and split count we have no way of knowing left out
-                    if (isApkBundle) {
-                        Text(
-                            text = "Base APK and splits",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = contentColor
-                        )
-                    }
-                }
-            }
-        }
-
-        // Uptodown uses its own brand color for every app, so the accent color plays no part here
-        SiteButton.Uptodown -> Surface(
-            onClick = onClick,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(UptodownButtonCornerRadius),
-            color = UptodownBrandColor
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.primaryContainer,
+        tonalElevation = 1.dp
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 15.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Download",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Text(
-                        text = "Free",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.White
-                    )
-                }
-                Icon(
-                    imageVector = MaterialSymbols.Rounded.Download,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(Defaults.IconSizeSmall)
+            Icon(
+                imageVector = MaterialSymbols.Rounded.Download,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.size(Defaults.IconSize)
+            )
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(
+                    text = if (isApkBundle) "Download APK bundle" else "Download APK",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Text(
+                    text = "From $sourceName · Via Sakura",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.78f)
                 )
             }
+            Icon(
+                imageVector = MaterialSymbols.Rounded.Open_in_new,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.size(Defaults.IconSizeSmall)
+            )
         }
     }
 }

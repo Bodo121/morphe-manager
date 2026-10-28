@@ -321,6 +321,7 @@ fun BatchPatcherScreen(
                         isApkBundle = metadata?.apkFileType?.isApk == false,
                         onDismiss = viewModel::cancelApkSearch,
                         onOpenApkDownloadHelper = apkDownloadHelpers.open,
+                        onDirectApkDownloaded = viewModel::onHelperApkReceived,
                         onContinue = viewModel::confirmApkSearch
                     )
                 }
