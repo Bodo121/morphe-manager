@@ -66,6 +66,12 @@ enum class SettingsSubpage(
         R.string.settings_section_patcher_summary,
         MaterialSymbols.Rounded.Memory
     ),
+    FILE_MANAGER(
+        R.string.sakura_files_title,
+        R.string.sakura_files_summary,
+        MaterialSymbols.Rounded.Folder,
+        searchable = false
+    ),
     STORAGE(
         R.string.settings_system_storage_management_title,
         R.string.settings_system_storage_management_description,

@@ -1575,4 +1575,6 @@ Do you still want to continue?"</string>
     <string name="sakura_greeting_name_summary">Optional nickname used only on this device</string>
     <string name="sakura_high_refresh_title">Prefer smoother 90/120 Hz</string>
     <string name="sakura_high_refresh_summary">Request a supported high refresh mode; system settings still decide</string>
+    <string name="sakura_files_title">Sakura Files</string>
+    <string name="sakura_files_summary">Browse, search, import, export and manage approved folders</string>
 </resources>

@@ -23,6 +23,7 @@ import app.morphe.manager.ui.screen.settings.system.AboutSettings
 import app.morphe.manager.ui.screen.settings.system.ApkDownloadHelpersSettings
 import app.morphe.manager.ui.screen.settings.system.InstallerSettings
 import app.morphe.manager.ui.screen.settings.system.NotificationsSettings
+import app.morphe.manager.ui.screen.settings.system.SakuraFileManagerScreen
 import app.morphe.manager.ui.screen.settings.system.StorageSettings
 import app.morphe.manager.ui.screen.shared.SubpageScaffold
 import app.morphe.manager.ui.viewmodel.HomeViewModel
@@ -43,13 +44,16 @@ fun SettingsSubpageScreen(
 ) {
     // PatchLab contains its own large scrollable diagnostic report. Avoid nesting that
     // scroll container inside SubpageScaffold's verticalScroll (infinite constraints).
-    if (subpage == SettingsSubpage.PATCH_LAB || subpage == SettingsSubpage.PROFILES || subpage == SettingsSubpage.BUILD_WORKSPACE) {
+    if (subpage == SettingsSubpage.PATCH_LAB || subpage == SettingsSubpage.PROFILES || subpage == SettingsSubpage.BUILD_WORKSPACE || subpage == SettingsSubpage.FILE_MANAGER) {
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
             TextButton(onClick = onBack) { Text(stringResource(R.string.sakura_ui_back_to_settings)) }
             Box(Modifier.weight(1f)) {
-                if (subpage == SettingsSubpage.BUILD_WORKSPACE) SakuraBuildWorkspaceScreen(navigation.startBuild)
-                else if (subpage == SettingsSubpage.PROFILES) SakuraProfilesScreen()
-                else SakuraPatchLabScreen()
+                when (subpage) {
+                    SettingsSubpage.BUILD_WORKSPACE -> SakuraBuildWorkspaceScreen(navigation.startBuild)
+                    SettingsSubpage.PROFILES -> SakuraProfilesScreen()
+                    SettingsSubpage.FILE_MANAGER -> SakuraFileManagerScreen()
+                    else -> SakuraPatchLabScreen()
+                }
             }
         }
         return
@@ -76,6 +80,7 @@ internal fun SettingsSubpageContent(
         SettingsSubpage.BUILD_WORKSPACE -> SakuraBuildWorkspaceScreen(navigation.startBuild)
         SettingsSubpage.PROFILES -> SakuraProfilesScreen()
         SettingsSubpage.STORAGE -> StorageSettings()
+        SettingsSubpage.FILE_MANAGER -> SakuraFileManagerScreen()
         SettingsSubpage.APK_DOWNLOAD_HELPERS -> ApkDownloadHelpersSettings()
         SettingsSubpage.ABOUT -> AboutSettings(
             onOpenLicenses = navigation.openLicenses,

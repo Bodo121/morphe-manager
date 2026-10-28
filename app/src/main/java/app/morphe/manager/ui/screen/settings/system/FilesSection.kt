@@ -137,6 +137,7 @@ fun FilesSection(
     ) {
         SettingsGroup {
             OriginalApkItems(settingsViewModel, tour, onOpenSubpage)
+            SubpageItem(SettingsSubpage.FILE_MANAGER, onOpenSubpage)
             SubpageItem(SettingsSubpage.STORAGE, onOpenSubpage)
         }
     }
