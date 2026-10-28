@@ -349,7 +349,8 @@ class HomeViewModel(
                 // to load - this is a valid terminal state, not a loading state.
                 val hasLoadedData = sourcesInitialized &&
                         (!hasEnabledSources || installedApps.isNotEmpty() || patchCount > 0 || updateEnded)
-                isBundleUpdateInProgress || !hasLoadedData
+                // Previously loaded app content remains visible during background source refresh.
+                !hasLoadedData
             }
                 .distinctUntilChanged()
                 .collect { loading ->
