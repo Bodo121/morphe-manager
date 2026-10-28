@@ -5,7 +5,7 @@
 
   **A community fork of Morphe Manager for Android enthusiasts.**
 
-  [Builds](https://github.com/Bodo121/morphe-manager/actions/workflows/cross_package_debug.yml) · [Source](https://github.com/Bodo121/morphe-manager) · [Original Morphe project](https://github.com/MorpheApp/morphe-manager)
+  [Builds](https://github.com/Bodo121/morphe-manager/actions/workflows/sakura_signed_release.yml) · [Source](https://github.com/Bodo121/morphe-manager) · [Original Morphe project](https://github.com/MorpheApp/morphe-manager)
 </div>
 
 ## Features
@@ -19,7 +19,7 @@
 
 ## Building
 
-The [SakuraPatcher debug workflow](https://github.com/Bodo121/morphe-manager/actions/workflows/cross_package_debug.yml) runs tests, compiles the debug APK and uploads an artifact. Debug builds use an independent signing certificate and may not install over an official Morphe build. The application ID is currently inherited from the upstream app; a complete application ID migration would require additional work.
+The [SakuraPatcher release workflow](https://github.com/Bodo121/morphe-manager/actions/workflows/sakura_signed_release.yml) runs the roadmap regression tests, builds permanent-key signed release APKs, verifies their package identities and signatures, and runs an emulator startup check before publication. The primary app uses `app.sakura.patcher`; the legacy migration bridge uses `app.morphe.manager`. See the migration guide before moving an existing installation.
 
 ## Acknowledgments and licensing
 
