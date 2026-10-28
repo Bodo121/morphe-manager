@@ -53,7 +53,7 @@ private data class SakuraProfile(
 
 @Serializable
 private data class SakuraProfileList(
-    val version: Int = 1,
+    val version: Int = 2,
     val profiles: List<SakuraProfile> = emptyList()
 )
 
@@ -72,7 +72,7 @@ private object SakuraProfilesStorage {
     fun parse(content: String): List<SakuraProfile> {
         require(content.length <= maxChars) { "Profile archive exceeds 1 MiB" }
         val archive = json.decodeFromString<SakuraProfileList>(content)
-        require(archive.version == 1) { "Unsupported profile version" }
+        require(archive.version in 1..2) { "Unsupported profile version" }
         require(archive.profiles.size <= 200) { "Too many profiles" }
         require(archive.profiles.all { it.name.isNotBlank() && it.packageName.isNotBlank() }) {
             "Invalid profile name or target package"
@@ -130,7 +130,11 @@ fun SakuraProfilesScreen(
                         require(count <= 1048576) { "Profile archive exceeds 1 MiB" }
                         String(chars, 0, count)
                     }
-                    SakuraProfilesStorage.parse(text)
+                    SakuraProfilesStorage.parse(text).also { imported ->
+                        require(imported.all { it.sourceIdentities.keys.containsAll(it.selections.keys) }) {
+                            "Legacy profiles lack portable source identities. Re-export them from the migration bridge on the original installation."
+                        }
+                    }
                 }
                 val merged = (profiles + items).distinctBy { it.id }
                 withContext(Dispatchers.IO) { SakuraProfilesStorage.save(context, merged) }
@@ -144,7 +148,19 @@ fun SakuraProfilesScreen(
             try {
                 withContext(Dispatchers.IO) {
                     val output = context.contentResolver.openOutputStream(uri) ?: error("Unable to save file")
-                    output.bufferedWriter().use { it.write(SakuraProfilesStorage.serialize(profiles)) }
+                    val sources = bundleRepo.sources.first()
+                    val metadata = bundleRepo.allBundlesInfoFlow.first()
+                    val portable = profiles.map { profile ->
+                        val identities = profile.selections.keys.associateWith { uid ->
+                            profile.sourceIdentities[uid] ?: run {
+                                val source = sources.singleOrNull { it.uid == uid } ?: error("Load the original source before exporting this legacy profile")
+                                require(profile.sourceNames[uid] == null || profile.sourceNames[uid] == metadata[uid]?.name) { "Legacy source changed; recreate this profile before exporting" }
+                                BuildWorkspace.sourceIdentity(source)
+                            }
+                        }
+                        profile.copy(sourceIdentities = identities, sourceVersions = profile.sourceVersions + profile.selections.keys.associateWith { metadata[it]?.version })
+                    }
+                    output.bufferedWriter().use { it.write(SakuraProfilesStorage.serialize(portable)) }
                 }
                 status = "Exported " + profiles.size + " profiles"
             } catch (e: Exception) { status = "Export failed: " + (e.message ?: "Unknown error") }
@@ -215,7 +231,7 @@ fun SakuraProfilesScreen(
                                     val currentUid = remap.getValue(uid)
                                     val bundle = available[currentUid] ?: error("Missing source ID " + uid)
                                     val nameAtSave = profile.sourceNames[uid]
-                                    require(nameAtSave == null || nameAtSave == bundle.name) {
+                                    require(profile.sourceIdentities.containsKey(uid) || nameAtSave == null || nameAtSave == bundle.name) {
                                         "Source ID " + uid + " now points to a different repository"
                                     }
                                     val patchNames = bundle.forPackage(profile.packageName, null).patches

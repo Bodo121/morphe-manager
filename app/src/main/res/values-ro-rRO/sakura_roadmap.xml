@@ -40,4 +40,6 @@
     <string name="sakura_ui_nickname_optional">Poreclă (opțional)</string>
     <string name="sakura_ui_save">Salvează</string>
     <string name="sakura_ui_back_to_settings">‹ Înapoi la setări</string>
+    <string name="sakura_review_patches">Verifică modificările</string>
+    <string name="sakura_recheck_storage">Verifică spațiul din nou</string>
 </resources>

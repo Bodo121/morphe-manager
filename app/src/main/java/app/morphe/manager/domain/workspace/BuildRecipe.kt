@@ -5,14 +5,15 @@ import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class RecipeSource(val identity: String, val name: String, val version: String?, val sha256: String,
-    val patches: Set<String>, val options: Map<String, Map<String, JsonElement>> = emptyMap())
+    val patches: Set<String>, val options: Map<String, Map<String, JsonElement>> = emptyMap(), val sourceUid: Int? = null)
 
 @Serializable
 data class BuildRecipe(val schema: Int = 1, val id: String, val createdAt: Long, val packageName: String,
     val versionName: String?, val versionCode: Long?, val inputSha256: String, val sources: List<RecipeSource>,
     val managerVersion: String, val patcherVersion: String, val allowCrossPackage: Boolean = false,
     val stripNativeLibs: Boolean = false, val status: String = "RUNNING", val outputSha256: String? = null,
-    val error: String? = null, val dryRun: Boolean = false, val elapsedMs: Long = 0)
+    val error: String? = null, val dryRun: Boolean = false, val elapsedMs: Long = 0,
+    val sessionId: String = "")
 
 /** Device-local numeric IDs never identify a portable source. */
 fun resolveSourceIdentity(identity: String, available: Map<Int, String>): Int {

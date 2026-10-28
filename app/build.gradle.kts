@@ -243,7 +243,7 @@ android {
         // 1 minute rounding and this offset still gives ~4,000 years of valid version codes
         // and still fall into Play store max version code range.
         val versionCodeOffset = 10010100
-        versionCode = timestampVersionCode + versionCodeOffset
+        versionCode = 50_000_000 + (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0)
 
         // Expose the resolved morphe-patcher version so PatcherViewModel can compare it
         // against the Patcher-Version declared in .mpp bundle manifests at runtime.

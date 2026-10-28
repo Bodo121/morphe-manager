@@ -427,7 +427,6 @@ class ManagerApplication : Application() {
         // Logs all app-private directories and their contents with file sizes on fresh start,
         // once copies no record claims are gone, so the log shows what the storage screen counts
         scope.launch(Dispatchers.IO) {
-            app.morphe.manager.domain.workspace.BuildWorkspace(this@ManagerApplication).markInterrupted()
             installedAppRepository.pruneUnclaimedPatchedApks()
             if (BuildConfig.DEBUG) fs.logStorageContents()
         }

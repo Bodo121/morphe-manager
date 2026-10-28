@@ -30,9 +30,24 @@ class BuildWorkspace(private val context: Context) {
     }
     fun readAll(): List<BuildRecipe> = root.listFiles().orEmpty().filter { it.isDirectory }.mapNotNull { dir ->
         runCatching { json.decodeFromString<BuildRecipe>(dir.resolve("recipe.json").readText()) }.getOrNull()
-    }.sortedByDescending { it.createdAt }
+    }.map { if (it.status == "RUNNING" && it.sessionId != sessionId) it.copy(status = "INTERRUPTED", error = "The previous process ended. Restart from the retained input and recipe.") else it }.sortedByDescending { it.createdAt }
     fun input(recipe: BuildRecipe) = directory(recipe.id).resolve("input.apk")
     fun output(recipe: BuildRecipe) = directory(recipe.id).resolve("output.apk")
+    fun pinnedSources(recipe: BuildRecipe): Map<Int, String> = recipe.sources.associate { source ->
+        val uid = requireNotNull(source.sourceUid)
+        uid to directory(recipe.id).resolve("source-$uid.jar").absolutePath
+    }
+    fun exportSources(recipe: BuildRecipe, output: java.io.OutputStream) {
+        java.util.zip.ZipOutputStream(output).use { zip ->
+            zip.putNextEntry(java.util.zip.ZipEntry("recipe.json")); zip.write(export(recipe).toByteArray()); zip.closeEntry()
+            recipe.sources.forEachIndexed { index, source ->
+                val uid = source.sourceUid ?: return@forEachIndexed
+                val file = directory(recipe.id).resolve("source-$uid.jar")
+                require(file.isFile && sha256(file) == source.sha256) { "Archived source is missing or changed" }
+                zip.putNextEntry(java.util.zip.ZipEntry("source-$index.jar")); file.inputStream().use { it.copyTo(zip) }; zip.closeEntry()
+            }
+        }
+    }
     fun logs(recipe: BuildRecipe) = directory(recipe.id).resolve("build.log").takeIf { it.exists() }?.readText().orEmpty()
     fun export(recipe: BuildRecipe): String = json.encodeToString(recipe)
     fun save(recipe: BuildRecipe) {
@@ -45,7 +60,6 @@ class BuildWorkspace(private val context: Context) {
         val file = directory(id).resolve("build.log")
         if (file.length() < 1024 * 1024) file.appendText(message.take(16000) + "\n")
     }
-    fun markInterrupted() { readAll().filter { it.status == "RUNNING" }.forEach { save(it.copy(status = "INTERRUPTED", error = "The previous process ended. Review the recipe and restart; partial output is never installed.")) } }
     fun delete(recipe: BuildRecipe) { directory(recipe.id).deleteRecursively() }
     suspend fun begin(input: File, packageName: String, version: String?, versionCode: Long?, selection: PatchSelection,
                       options: Options, repo: PatchBundleRepository, prefs: PreferencesManager, dryRun: Boolean): BuildRecipe {
@@ -60,10 +74,15 @@ class BuildWorkspace(private val context: Context) {
                 versionName = version, versionCode = versionCode, inputSha256 = sha256(dir.resolve("input.apk")),
                 sources = selection.map { (uid, patches) ->
                     val source = sources.single { it.uid == uid }
-                    RecipeSource(sourceIdentity(source), source.name, source.version, sha256(source.patchesJarFile), patches,
-                        options[uid].orEmpty().mapValues { (_, values) -> values.mapValues { optionValueToJson(it.value) } })
+                    val pinned = dir.resolve("source-$uid.jar")
+                    source.patchesJarFile.copyTo(pinned)
+                    pinned.setReadOnly()
+                    val hash = sha256(pinned)
+                    val identity = if (source is RemotePatchBundle) sourceIdentity(source) else "local:$hash"
+                    RecipeSource(identity, source.name, app.morphe.manager.patcher.patch.PatchBundle(pinned.path).manifestAttributes?.version ?: source.version, hash, patches,
+                        options[uid].orEmpty().mapValues { (_, values) -> values.mapValues { optionValueToJson(it.value) } }, sourceUid = uid)
                 }, managerVersion = BuildConfig.VERSION_NAME, patcherVersion = BuildConfig.PATCHER_VERSION,
-                allowCrossPackage = prefs.allowCrossPackagePatches.get(), stripNativeLibs = prefs.stripUnusedNativeLibs.get(), dryRun = dryRun)
+                allowCrossPackage = prefs.allowCrossPackagePatches.get(), stripNativeLibs = prefs.stripUnusedNativeLibs.get(), dryRun = dryRun, sessionId = sessionId)
             save(recipe); return recipe
         } catch (e: Exception) { dir.deleteRecursively(); throw e }
     }
@@ -77,7 +96,8 @@ class BuildWorkspace(private val context: Context) {
         require(text.length <= 1024 * 1024) { "Recipe exceeds 1 MiB" }
         val parsed = json.decodeFromString<BuildRecipe>(text)
         require(parsed.schema == 1 && parsed.packageName.isNotBlank() && parsed.sources.size in 1..100)
-        require(parsed.sources.all { it.patches.size <= 2000 })
+        require(Regex("[0-9a-fA-F]{64}").matches(parsed.inputSha256)) { "Invalid input hash" }
+        require(parsed.sources.all { it.patches.size in 1..2000 && Regex("[0-9a-fA-F]{64}").matches(it.sha256) }) { "Invalid source hash or patch selection" }
         val imported = parsed.copy(id = UUID.randomUUID().toString(), createdAt = System.currentTimeMillis(), status = "IMPORTED", outputSha256 = null)
         save(imported); return imported
     }
@@ -104,6 +124,7 @@ class BuildWorkspace(private val context: Context) {
     }
     companion object {
         private val logLock = Any()
+        private val sessionId = UUID.randomUUID().toString()
         fun sha256(file: File): String {
             val digest = MessageDigest.getInstance("SHA-256")
             file.inputStream().buffered().use { input -> val buffer = ByteArray(65536); while (true) { val n = input.read(buffer); if (n < 0) break; digest.update(buffer, 0, n) } }

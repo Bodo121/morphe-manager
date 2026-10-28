@@ -23,6 +23,7 @@ import java.util.UUID
 import java.text.DateFormat
 import java.util.Date
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun SakuraBuildWorkspaceScreen(onStartBuild: (Patcher.ViewModelParams) -> Unit,
     repo: PatchBundleRepository = koinInject(), prefs: PreferencesManager = koinInject()) {
@@ -70,6 +71,15 @@ fun SakuraBuildWorkspaceScreen(onStartBuild: (Patcher.ViewModelParams) -> Unit,
                 review = withContext(Dispatchers.IO) { store.prepare(record, file, repo, prefs) }
             } catch (e: CancellationException) { staged?.delete(); throw e }
             catch (e: Exception) { staged?.delete(); status = e.message.orEmpty() }
+            finally { busy = false }
+        }
+    }
+    val sourceExporter = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
+        val record = picked
+        if (uri != null && record != null) scope.launch {
+            busy = true
+            try { withContext(Dispatchers.IO) { context.contentResolver.openOutputStream(uri)!!.use { store.exportSources(record, it) } }; status = "Source archive exported. It includes recipe option values; review before sharing." }
+            catch (e: Exception) { status = e.message.orEmpty() }
             finally { busy = false }
         }
     }
@@ -131,13 +141,14 @@ fun SakuraBuildWorkspaceScreen(onStartBuild: (Patcher.ViewModelParams) -> Unit,
                     Text("${record.versionName.orEmpty()} · ${record.status} · ${DateFormat.getDateTimeInstance().format(Date(record.createdAt))}")
                     Text("${record.sources.sumOf { it.patches.size }} patches · ${record.sources.size} sources · ${record.elapsedMs / 1000}s")
                     if (record.error != null) Text(record.error.take(300), color = MaterialTheme.colorScheme.error)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(enabled = !busy && record.status != "RUNNING", onClick = { prepare(record, store.input(record)) }) { Text(stringResource(R.string.sakura_ui_rebuild)) }
                         OutlinedButton(enabled = !busy && record.status != "RUNNING", onClick = { picked = record; apkPicker.launch(arrayOf("application/vnd.android.package-archive", "application/octet-stream")) }) { Text(stringResource(R.string.sakura_ui_new_apk)) }
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         TextButton(onClick = { scope.launch { exportText = withContext(Dispatchers.IO) { store.export(record) }; exporter.launch("sakura-recipe-${record.id}.json") } }) { Text(stringResource(R.string.sakura_ui_recipe)) }
                         TextButton(onClick = { scope.launch { exportText = withContext(Dispatchers.IO) { store.logs(record) }; exporter.launch("sakura-build-${record.id}.log") } }) { Text(stringResource(R.string.sakura_ui_log)) }
+                        TextButton(enabled = !busy && record.status != "RUNNING", onClick = { picked = record; sourceExporter.launch("sakura-sources-${record.id}.zip") }) { Text("Sources") }
                         TextButton(enabled = record.status != "RUNNING", onClick = { delete = record }) { Text(stringResource(R.string.sakura_ui_delete)) }
                     }
                     if (record.status == "SUCCESS") {

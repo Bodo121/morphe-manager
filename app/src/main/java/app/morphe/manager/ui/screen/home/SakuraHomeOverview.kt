@@ -74,8 +74,8 @@ internal fun SakuraHomeOverview(
             shape = RoundedCornerShape(18.dp),
             border = BorderStroke(1.dp, scheme.primary.copy(alpha = 0.35f))
         ) {
-            Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     Text("Sakura Core", color = scheme.primary, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
                     Text("Patch your apps", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Text("Choose an installed app below or open an APK from storage.",

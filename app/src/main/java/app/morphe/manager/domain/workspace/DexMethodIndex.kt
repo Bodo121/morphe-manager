@@ -40,6 +40,11 @@ object DexMethodIndex {
             }
             return type(short(at)) + "->" + string(int(at + 4)) + "(" + params + ")" + type(int(p + 4))
         }
+        require(listOf(stringCount, typeCount, protoCount, methodCount).all { it in 0..10000000 })
+        require(strings.toLong() + stringCount.toLong() * 4 <= bytes.size)
+        require(types.toLong() + typeCount.toLong() * 4 <= bytes.size)
+        require(protos.toLong() + protoCount.toLong() * 12 <= bytes.size)
+        require(methods.toLong() + methodCount.toLong() * 8 <= bytes.size)
         val result = linkedMapOf<String, String>(); val count = int(96); val classes = int(100)
         require(count in 0..200000)
         for (i in 0 until count) {

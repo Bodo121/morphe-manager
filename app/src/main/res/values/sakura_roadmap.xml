@@ -46,4 +46,6 @@
     <string name="sakura_ui_nickname_optional">Nickname (optional)</string>
     <string name="sakura_ui_save">Save</string>
     <string name="sakura_ui_back_to_settings">‹ Back to settings</string>
+    <string name="sakura_review_patches">Review patches</string>
+    <string name="sakura_recheck_storage">Recheck storage</string>
 </resources>

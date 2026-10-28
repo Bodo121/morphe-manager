@@ -38,3 +38,14 @@ The results are **metadata checks**, not proof that a patch's bytecode fingerpri
 ### Imported UI design
 
 The supplied Google AI Studio export was a React/Vite mockup with simulated patch results, not an Android project. Sakura Dark/Light colors, compact technical cards, screen labels, and the diagnostics workflow inspired a native Jetpack Compose implementation. The working Morphe patcher, installers, sources, onboarding, backup, settings, and batch flows remain native.
+
+
+## SakuraPatcher 3 workspace
+
+The independent application ID is `app.sakura.patcher`. Existing Sakura users should follow [the migration guide](docs/SAKURA-3-MIGRATION.md) and keep a private backup of their APK signing key. The release includes a migration bridge using the old ID.
+
+Open **Settings → Build workspace** for retained build recipes, hashes, logs, installation checks, and reviewed rebuilds with a newer APK. Every single-app run offers a **Ready to patch?** review and a real engine **Dry run**. Dry runs execute patch logic and dependencies but do not verify compilation, signing, or installation.
+
+PatchLab compares APK permissions, components, signing certificates, bounded method instruction indexes, resources, and native paths. A metadata package/version match is not fingerprint verification. Motion preferences respect Android animation settings, accessibility, visibility, Battery Saver, and the patcher workload.
+
+See [release details](docs/SAKURA-3-RELEASE.md) for validation scope and known limits.

@@ -490,7 +490,8 @@ class PatcherWorker(
                 ::updateProgress,
                 stripNativeLibs,
                 if (args.dryRun) null else onMergedApkReady,
-                dryRun = args.dryRun
+                dryRun = args.dryRun,
+                bundleFiles = recipe?.let(workspace::pinnedSources).orEmpty()
             )
 
             val elapsed = try {
