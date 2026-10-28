@@ -6,7 +6,6 @@
 package app.morphe.manager.ui.screen.shared
 
 import androidx.appcompat.content.res.AppCompatResources
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,7 +17,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -55,41 +53,13 @@ fun PulsingLogoIndicator(
 
     val context = LocalContext.current
     val painter = rememberDrawablePainter(
-        drawable = remember(context) { AppCompatResources.getDrawable(context, R.drawable.ic_launcher_foreground) }
-    )
-
-    val transition = rememberInfiniteTransition(label = "logo_pulse")
-
-    val scale by transition.animateFloat(
-        initialValue = 0.82f,
-        targetValue = 1.0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(900, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "scale"
-    )
-
-    val alpha by transition.animateFloat(
-        initialValue = 0.45f,
-        targetValue = 1.0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(900, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "alpha"
+        drawable = remember(context) { AppCompatResources.getDrawable(context, R.drawable.sakura_app_icon) }
     )
 
     Image(
         painter = painter,
         contentDescription = contentDescription,
-        modifier = modifier
-            .size(size)
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-                this.alpha = alpha
-            }
+        modifier = modifier.size(size)
     )
 }
 

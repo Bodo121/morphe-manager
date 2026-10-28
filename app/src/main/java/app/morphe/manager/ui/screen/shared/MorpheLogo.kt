@@ -10,6 +10,12 @@ import androidx.annotation.DrawableRes
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
+import androidx.compose.material3.Text
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -33,13 +39,10 @@ import app.morphe.manager.R
 @Composable
 fun MorpheLauncherLogo(modifier: Modifier = Modifier) {
     Image(
-        painter = rememberAppCompatPainter(R.drawable.ic_launcher_foreground),
+        painter = rememberAppCompatPainter(R.drawable.sakura_app_icon),
         contentDescription = null,
         contentScale = ContentScale.Fit,
-        modifier = modifier.graphicsLayer {
-            scaleX = 1.5f
-            scaleY = 1.5f
-        }
+        modifier = modifier
     )
 }
 
@@ -52,18 +55,21 @@ fun MorpheWordmark(
     modifier: Modifier = Modifier,
     textColor: Color = MaterialTheme.colorScheme.onSurface
 ) {
-    // Both halves share one viewport, so laid over each other they line up as the one mark
-    Box(modifier = modifier.aspectRatio(WORDMARK_ASPECT_RATIO)) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
         Image(
-            painter = rememberAppCompatPainter(R.drawable.ic_morphe_wordmark_letter),
+            painter = rememberAppCompatPainter(R.drawable.sakura_app_icon),
             contentDescription = null,
-            modifier = Modifier.matchParentSize()
+            modifier = Modifier.size(38.dp)
         )
-        Image(
-            painter = rememberAppCompatPainter(R.drawable.ic_morphe_wordmark_text),
-            contentDescription = null,
-            colorFilter = ColorFilter.tint(textColor),
-            modifier = Modifier.matchParentSize()
+        Text(
+            text = "SakuraPatcher",
+            color = textColor,
+            style = MaterialTheme.typography.titleLarge,
+            maxLines = 1
         )
     }
 }
