@@ -142,8 +142,8 @@ object Animations {
     val fadeOut = fadeOut(animationSpec = defaultTween())
 
     // Dialog transitions
-    val dialogEnter = fadeIn
-    val dialogExit = fadeOut
+    val dialogEnter = fadeIn + scaleIn(defaultTween(190, FastOutSlowInEasing), initialScale = 0.985f)
+    val dialogExit = fadeOut + scaleOut(defaultTween(140), targetScale = 0.99f)
 
     // Overlays (no scale needed)
     val overlayEnter = fadeIn
@@ -175,9 +175,9 @@ object Animations {
 
     // A control popping in place from nothing, past its size and back. Put away it only shrinks
     // off, as going away calls for no flourish
-    val popEnter = scaleIn(spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMediumLow), initialScale = 0f) +
+    val popEnter = scaleIn(defaultTween(180, FastOutSlowInEasing), initialScale = 0.94f) +
             fadeIn(tween(Defaults.ANIMATION_DURATION_SHORT))
-    val popExit = fadeOut + scaleOut(defaultTween(), targetScale = 0.6f)
+    val popExit = fadeOut + scaleOut(defaultTween(140), targetScale = 0.96f)
 
     // A control joining a header's row: its slot opens on a spring while it pops in
     val headerActionEnter = expandHorizontally(spring(stiffness = Spring.StiffnessMediumLow), clip = false) + popEnter

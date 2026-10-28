@@ -18,6 +18,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.morphe.manager.R
+import app.morphe.manager.domain.manager.PreferencesManager
 import app.morphe.manager.ui.screen.settings.appearance.*
 import app.morphe.manager.ui.screen.shared.*
 import app.morphe.manager.ui.theme.SeasonalEvent
@@ -128,6 +129,7 @@ fun AppearanceSettings(themeViewModel: ThemeSettingsViewModel = koinViewModel())
 
         HomeScreenSection(
             showGreetingPhrases = showGreetingPhrases,
+            prefs = themeViewModel.prefs,
             showRepatchNotice = showRepatchNotice,
             onGreetingPhrasesToggle = { themeViewModel.toggleShowGreetingPhrases(showGreetingPhrases) },
             onRepatchNoticeToggle = { themeViewModel.toggleShowRepatchNotice(showRepatchNotice) },
@@ -352,6 +354,7 @@ private fun EffectsSection(
 @Composable
 private fun HomeScreenSection(
     showGreetingPhrases: Boolean,
+    prefs: PreferencesManager,
     showRepatchNotice: Boolean,
     onGreetingPhrasesToggle: () -> Unit,
     onRepatchNoticeToggle: () -> Unit,
@@ -370,6 +373,8 @@ private fun HomeScreenSection(
                 checked = showGreetingPhrases,
                 onToggle = onGreetingPhrasesToggle
             )
+            SakuraGreetingNameSetting(prefs)
+            SakuraHighRefreshSetting(prefs)
             SettingsSwitchItem(
                 title = stringResource(R.string.settings_appearance_repatch_notice),
                 subtitle = stringResource(R.string.settings_appearance_repatch_notice_description),

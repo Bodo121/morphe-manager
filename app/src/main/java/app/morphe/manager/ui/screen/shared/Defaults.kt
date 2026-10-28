@@ -65,9 +65,9 @@ object Defaults {
 
     // Animation durations
     /** Duration used for dialog enter/exit and overlay transitions. */
-    const val ANIMATION_DURATION = 130
+    const val ANIMATION_DURATION = 190
     /** Shorter fade duration used inside spring-based exit transitions. */
-    const val ANIMATION_DURATION_SHORT = 95
+    const val ANIMATION_DURATION_SHORT = 125
 
     // Dialog animation scale
     /** Initial/target scale for dialog enter/exit scale animation. */

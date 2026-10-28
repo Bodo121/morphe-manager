@@ -91,6 +91,8 @@ class PreferencesManager(
     /** Whether headers, bars and panels blur what scrolls under them, or stand solid over it. */
     val blur = booleanPreference("blur", false)
     val showGreetingPhrases = booleanPreference("show_greeting_phrases", true)
+    val sakuraGreetingName = stringPreference("sakura_greeting_name", "")
+    val sakuraPreferHighRefresh = booleanPreference("sakura_prefer_high_refresh", true)
 
     /** The per-app badges carry the same news, so the banner is worth turning off. */
     val showRepatchNotice = booleanPreference("show_repatch_notice", true)

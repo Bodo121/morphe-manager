@@ -5,7 +5,10 @@
 
 package app.morphe.manager.ui.screen.shared
 
-import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
+import androidx.compose.ui.graphics.graphicsLayer
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.collect
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
@@ -54,8 +57,11 @@ enum class MainPage(@param:StringRes val titleRes: Int, val icon: ImageVector) {
  * next to first, so the pages between are never drawn on the way and the slide costs what a swipe does.
  */
 suspend fun PagerState.turnTo(page: MainPage) {
-    // Low-motion Sakura navigation: no unnecessary intermediary page rendering.
-    scrollToPage(page.ordinal)
+    if (kotlin.math.abs(currentPage - page.ordinal) == 1) {
+        animateScrollToPage(page.ordinal)
+    } else {
+        scrollToPage(page.ordinal)
+    }
 }
 
 /**
@@ -92,7 +98,17 @@ fun MainPagerScaffold(
     val select: (MainPage) -> Unit = { target ->
         scope.launch { pagerState.turnTo(target) }
     }
-    BackHandler(enabled = current != MainPage.APPS) { select(MainPage.APPS) }
+    var predictiveProgress by remember { mutableFloatStateOf(0f) }
+    PredictiveBackHandler(enabled = current != MainPage.APPS) { events ->
+        try {
+            events.collect { event -> predictiveProgress = event.progress.coerceIn(0f, 1f) }
+            pagerState.turnTo(MainPage.APPS)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } finally {
+            predictiveProgress = 0f
+        }
+    }
 
     val reducedUi = SakuraCrashRecovery.safeMode(LocalContext.current)
     val visiblePages = if (reducedUi) {
@@ -113,7 +129,11 @@ fun MainPagerScaffold(
     val pager: @Composable (Modifier, FocusRequester?, Dp) -> Unit = { pagerModifier, startFocus, bottomBarHeight ->
         // A remote steps off a page onto the navigation beside it, if any, never into the next page
         val pageFocus = rememberPagerPageFocus(startFocus)
-        Box(modifier = pagerModifier) {
+        Box(modifier = pagerModifier.graphicsLayer {
+            val scale = 1f - predictiveProgress * 0.045f
+            scaleX = scale
+            scaleY = scale
+        }) {
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),

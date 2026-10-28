@@ -17,6 +17,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Parcelable
+import android.view.WindowManager
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
@@ -120,11 +121,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
         enableEdgeToEdge()
-        installSplashScreen()
 
         // A native recovery view must be available even if the Compose theme or the
         // five-page manager fails before it can draw a frame.
@@ -142,6 +143,12 @@ class MainActivity : AppCompatActivity() {
         }
 
         val vm: MainViewModel = getActivityViewModel()
+
+        lifecycleScope.launch {
+            vm.prefs.sakuraPreferHighRefresh.flow.collect { enabled ->
+                window.decorView.post { applySakuraRefreshMode(enabled) }
+            }
+        }
 
         // A recreated activity keeps the background RANDOM drew, only a fresh launch draws again
         if (savedInstanceState == null) RandomBackground.newLaunch()
@@ -328,6 +335,22 @@ class MainActivity : AppCompatActivity() {
             name = param("name"),
             scope = SourceScope.fromLink(app = param("app"), appName = param("appName"))
         )
+    }
+
+    private fun applySakuraRefreshMode(enabled: Boolean) {
+        val display = window.decorView.display ?: return
+        val current = display.mode
+        val mode = if (enabled) display.supportedModes.filter {
+            it.physicalWidth == current.physicalWidth &&
+                it.physicalHeight == current.physicalHeight &&
+                it.refreshRate >= 89f && it.refreshRate <= 120.5f
+        }.maxByOrNull { it.refreshRate } else null
+        val params = window.attributes
+        val id = mode?.modeId ?: 0
+        if (params.preferredDisplayModeId != id) {
+            params.preferredDisplayModeId = id
+            window.attributes = params
+        }
     }
 
     companion object {
@@ -588,12 +611,12 @@ private fun MorpheManager(vm: MainViewModel) {
             // Every screen opens deeper than the main one along Material's shared Z axis, rather than
             // sideways, which the main screen's own pages already move. Back runs it in reverse, and
             // under the predictive gesture the screen leaving shrinks away instead
-            enterTransition = { EnterTransition.None },
-            exitTransition = { ExitTransition.None },
-            popEnterTransition = { EnterTransition.None },
-            popExitTransition = { ExitTransition.None },
-            predictivePopEnterTransition = { EnterTransition.None },
-            predictivePopExitTransition = { ExitTransition.None }
+            enterTransition = { Animations.fadeIn },
+            exitTransition = { Animations.fadeOut },
+            popEnterTransition = { Animations.fadeIn },
+            popExitTransition = { Animations.fadeOut },
+            predictivePopEnterTransition = { Animations.fadeIn },
+            predictivePopExitTransition = { Animations.predictiveBackExit }
         ) {
             composable<HomeScreen> { entry ->
                 val bundleUpdateProgress by homeViewModel.bundleUpdateProgress.collectAsStateWithLifecycle(null)

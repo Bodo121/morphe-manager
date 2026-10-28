@@ -8,7 +8,11 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import app.morphe.manager.domain.manager.PreferencesManager
+import org.koin.compose.koinInject
+import java.time.LocalDate
+import java.time.LocalTime
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -26,13 +30,34 @@ internal fun SakuraHomeOverview(
     onPatchLab: () -> Unit,
     onSources: () -> Unit,
     onSelections: () -> Unit,
-    greeting: String? = null
+    greeting: String? = null,
+    prefs: PreferencesManager = koinInject()
 ) {
     val scheme = MaterialTheme.colorScheme
+    val nickname by prefs.sakuraGreetingName.getAsState()
+    val today = remember { LocalDate.now() }
+    val hour = remember { LocalTime.now().hour }
+    val displayGreeting = remember(greeting, nickname, today, hour) {
+        if (greeting != null && nickname.isNotBlank()) {
+            val opener = when (hour) {
+                in 5..11 -> "Good morning"
+                in 12..16 -> "Good afternoon"
+                in 17..21 -> "Good evening"
+                else -> "Hello"
+            }
+            val prompts = listOf(
+                "What are you up to today?", "Ready to make something yours?",
+                "Have a great day!", "Anything interesting to patch?",
+                "Your next build is one tap away.", "What's the plan today?",
+                "Ready for a fresh start?"
+            )
+            "$opener, ${nickname.trim().take(32)}! ${prompts[(today.toEpochDay() % prompts.size).toInt()]}"
+        } else greeting?.takeIf { it.isNotBlank() } ?: "Morphe engine · Sakura Core"
+    }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text("SakuraPatcher", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            Text(greeting?.takeIf { it.isNotBlank() } ?: "Morphe engine · Sakura Core",
+            Text(displayGreeting,
                 style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
         }
         Card(
