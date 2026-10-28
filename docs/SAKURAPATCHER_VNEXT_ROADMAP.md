@@ -123,3 +123,12 @@ The following are source-code changes, **not yet an end-to-end validated release
 - [x] Sakura Diff displays aggregate DEX count changes and the local scan duration; these are **structural metrics**, not semantic bytecode differences or fingerprint matches.
 - [x] Provide a manual Android-emulator launch smoke-test workflow to detect app process exit and collect crash logcat; device-specific HyperOS launch remains unverified.
 - [ ] Full DEX fingerprint matching, resources/manifest decoding, patch conflict isolation, true rollback, and performance engine require deeper implementation and device validation.
+
+### Release and startup follow-up (2026-10-28)
+- [x] Release-only GitHub Actions workflow set to build `:app:assembleRelease`, validate the APK signature and package ID, and publish a GitHub Release **only when the four persistent signing secrets are configured**. No ephemeral signing key is acceptable for a public release.
+- [x] Normal main pushes no longer build/upload debug APKs.
+- [x] Remove blocking Home loading state while preloaded app data remains available during a patch-source refresh.
+- [x] Defer cold-start network update checks and rate-limit source avatar preloading.
+- [x] Deduplicate unnecessary source/metadata flow emissions.
+- [ ] Confirm signed release workflow finishes and release APK can be installed/upgraded with a persistent key.
+- [ ] Verify startup/scrolling responsiveness on physical HyperOS devices with active patch downloads.

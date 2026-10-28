@@ -333,8 +333,6 @@ class HomeViewModel(
                 installedAppRepository.getAll(),
                 availablePatches
             ) { progress, sources, installedApps, patchCount ->
-                val isBundleUpdateInProgress =
-                    progress?.result == PatchBundleRepository.BundleUpdateResult.None
                 val hasEnabledSources = sources.any { it.enabled }
                 // Guard: sources list is empty on the very first emission before the DB is read.
                 // Treat that transient state as "still loading" so we never flash the empty-state

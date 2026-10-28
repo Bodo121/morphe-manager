@@ -390,15 +390,24 @@ class ManagerApplication : Application() {
      */
     private fun onFirstScreenCreated() {
         scope.launch(Dispatchers.Default) {
+            // Give Compose a chance to draw the first frame before Ktor / patch source checks
+            // start competing with UI layout and cold-start icon decoding.
+            delay(850)
             patchBundleRepository.updateCheck()
         }
 
-        // Preload bundle avatar images into AvatarCache while the user hasn't opened the sheet yet.
-        // Suspends until sources are ready, then loads them all in parallel, a fallback only for
-        // a source whose own picture does not load
+        // Avatars are not essential for the first frame. Wait for source updates to settle,
+        // then preload a bounded set on a limited IO dispatcher rather than competing with
+        // patch downloads and spinning up one worker for every configured repository.
         scope.launch(Dispatchers.IO) {
-            patchBundleRepository.sources.first { it.isNotEmpty() }.forEach { bundle ->
-                launch {
+            delay(2_000)
+            patchBundleRepository.bundleUpdateProgress.first {
+                it?.result != PatchBundleRepository.BundleUpdateResult.None
+            }
+            val bundles = patchBundleRepository.sources.first { it.isNotEmpty() }.take(8)
+            val avatarDispatcher = Dispatchers.IO.limitedParallelism(2)
+            bundles.forEach { bundle ->
+                launch(avatarDispatcher) {
                     val avatarUrls = bundle.avatarUrls
                     loadAvatar(avatarUrls.primary, avatarUrls.fallback)
                 }

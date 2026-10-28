@@ -99,6 +99,8 @@ class PatchBundleRepository(
     // Hot so collectors see the loaded sources on their first frame instead of an empty list
     val sources = store.state
         .map { (it as? BundleState.Ready)?.sources?.values?.toList() ?: emptyList() }
+        // Avoid notifying Home, Source cards and filters when store actions do not alter sources.
+        .distinctUntilChanged()
         .stateIn(scope, SharingStarted.Eagerly, emptyList())
     val bundles = store.state.map {
         (it as? BundleState.Ready)?.sources?.mapNotNull { (uid, src) ->
@@ -149,6 +151,7 @@ class PatchBundleRepository(
      */
     val appMetadata: StateFlow<Map<String, BundleAppMetadata>> =
         bundleInfoFlow
+            .distinctUntilChanged()
             .map { BundleAppMetadata.buildFrom(it) }
             .stateIn(scope, SharingStarted.Eagerly, emptyMap())
 
@@ -159,6 +162,7 @@ class PatchBundleRepository(
      */
     val allAppMetadata: StateFlow<Map<String, BundleAppMetadata>> =
         allBundlesInfoFlow
+            .distinctUntilChanged()
             .map { BundleAppMetadata.buildFrom(it) }
             .stateIn(scope, SharingStarted.Eagerly, emptyMap())
 
