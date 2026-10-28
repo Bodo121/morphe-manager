@@ -289,7 +289,9 @@ fun SakuraPatchLabScreen(
         }.take(80)
     }
 
-    val report = buildString {
+    val report by produceState("Preparing report…", primary, comparison, checks) {
+        value = withContext(Dispatchers.Default) {
+        buildString {
         val apk = primary
         appendLine("Sakura PatchLab - local preflight report")
         if (apk == null) {
@@ -348,6 +350,9 @@ fun SakuraPatchLabScreen(
             }
         }
         appendLine("Note: Metadata compatibility is not bytecode fingerprint verification.")
+    }
+
+        }
     }
 
     val reportExportLauncher = rememberLauncherForActivityResult(

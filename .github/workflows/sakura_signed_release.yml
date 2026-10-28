@@ -119,6 +119,7 @@ jobs:
           script: python3 scripts/sakura_emulator_smoke.py
 
       - name: Upload signed release artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: SakuraPatcher-release
