@@ -516,28 +516,7 @@ private const val PULSE_MILLIS = 1100
  * bounds. It marks each result once rather than moving for as long as the screen shows.
  */
 @Composable
-private fun Modifier.resultPulse(color: Color, from: Dp): Modifier {
-    // Skipped where accessibility services ask for less motion
-    val reduceMotion = rememberAccessibilityEnabled()
-    val progress = remember { Animatable(1f) }
-    LaunchedEffect(color) {
-        if (reduceMotion) return@LaunchedEffect
-        progress.snapTo(0f)
-        progress.animateTo(1f, tween(PULSE_MILLIS, easing = FastOutSlowInEasing))
-    }
-
-    // Read while drawing, so the ring spreads without recomposing what it lies under
-    return drawBehind {
-        val t = progress.value
-        if (t >= 1f) return@drawBehind
-        val startRadius = from.toPx() / 2f
-        drawCircle(
-            color = color.copy(alpha = 0.5f * (1f - t)),
-            radius = startRadius * (1f + 0.8f * t),
-            style = Stroke(width = (1.dp + 5.dp * (1f - t)).toPx())
-        )
-    }
-}
+private fun Modifier.resultPulse(color: Color, from: Dp): Modifier = this
 
 /**
  * The app's icon and name under a badge saying where the run ended up. A [condensed] header sets

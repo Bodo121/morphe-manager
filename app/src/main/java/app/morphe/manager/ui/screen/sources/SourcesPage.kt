@@ -355,7 +355,7 @@ private fun SourcesPageContent(
     PinnedHeaderPage(
         header = {
             PageHeader(
-                title = stringResource(R.string.sources),
+                title = "Patch Sources",
                 subtitle = pluralStringResource(
                     R.plurals.sources_management_subtitle,
                     sources.size,

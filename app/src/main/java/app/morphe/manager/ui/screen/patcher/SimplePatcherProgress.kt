@@ -62,14 +62,6 @@ fun SimplePatchingInProgress(
         )
     }
 
-    // Rotate messages every 10 seconds
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(10.seconds)
-            currentMessage.intValue = HomeAndPatcherMessages.getPatcherMessage(context)
-        }
-    }
-
     // Main content area
     Column(
         modifier = Modifier
@@ -300,13 +292,12 @@ private fun CircularProgressWithStats(
         contentAlignment = Alignment.Center,
         modifier = modifier
     ) {
-        WavyProgressRing(
+        androidx.compose.material3.CircularProgressIndicator(
             progress = progress,
-            wavelength = ProgressRingWavelength,
-            accentColor = accentColor,
             modifier = Modifier.fillMaxSize(),
-            amplitude = PROGRESS_RING_AMPLITUDE,
-            trackColor = MaterialTheme.colorScheme.surfaceVariant
+            color = accentColor ?: MaterialTheme.colorScheme.primary,
+            trackColor = MaterialTheme.colorScheme.surfaceVariant,
+            strokeWidth = 8.dp
         )
 
         // Stats in center

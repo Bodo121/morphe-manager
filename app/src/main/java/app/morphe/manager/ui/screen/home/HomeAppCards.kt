@@ -83,7 +83,7 @@ private data class HomeAppCardStyle(
      * result stays per-app even when the rest of the gradient is fixed.
      */
     fun cardColors(bundleColors: List<Color>): List<Color> =
-        colorResolver?.resolve(bundleColors) ?: bundleColors
+        colorResolver?.resolve(bundleColors) ?: listOf(cardColor)
 
     /**
      * This style adjusted to the gradient it will be drawn on. White reads on the colors a bundle
@@ -595,7 +595,7 @@ internal fun AppCardLayout(
                 val cr = CornerRadius(cardStyle.cardRadius.toPx())
                 val rtl = layoutDirection.isRtl
 
-                if (cardStyle.monochrome) {
+                if (cardStyle.monochrome || colors.all { it == baseColor }) {
                     return@drawWithCache onDrawWithContent {
                         drawRoundRect(
                             color = cardStyle.cardColor,
