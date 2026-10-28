@@ -80,6 +80,7 @@ class Runtime(
         val request = PatchRequest(
             packageName = packageName,
             allowCrossPackagePatches = prefs.allowCrossPackagePatches.get(),
+            compatibilityPackage = if (prefs.allowCrossPackagePatches.get()) "*" else packageName,
             inputFile = inputFile,
             outputFile = outputFile,
             mergedApkFile = mergedApk.absolutePath,
