@@ -35,6 +35,15 @@ jobs:
       - name: Cache Gradle build
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Validate release Kotlin compilation without a signing key
+        timeout-minutes: 25
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          _JAVA_OPTIONS: -Djava.awt.headless=true
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :app:compileReleaseKotlin --build-cache --stacktrace --console=plain
+
       - name: Configure permanent release signing
         env:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}

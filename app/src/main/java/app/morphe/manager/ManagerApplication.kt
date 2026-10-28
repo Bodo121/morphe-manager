@@ -401,8 +401,12 @@ class ManagerApplication : Application() {
         // patch downloads and spinning up one worker for every configured repository.
         scope.launch(Dispatchers.IO) {
             delay(2_000)
-            patchBundleRepository.bundleUpdateProgress.first {
-                it?.result != PatchBundleRepository.BundleUpdateResult.None
+            if (patchBundleRepository.bundleUpdateProgress.value?.result ==
+                PatchBundleRepository.BundleUpdateResult.None
+            ) {
+                patchBundleRepository.bundleUpdateProgress.first {
+                    it?.result != PatchBundleRepository.BundleUpdateResult.None
+                }
             }
             val bundles = patchBundleRepository.sources.first { it.isNotEmpty() }.take(8)
             val avatarDispatcher = Dispatchers.IO.limitedParallelism(2)
