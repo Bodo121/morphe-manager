@@ -14,6 +14,8 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.*
@@ -71,7 +73,13 @@ fun PatcherScreen(
         androidx.compose.material3.AlertDialog(
             onDismissRequest = onBackClick,
             title = { androidx.compose.material3.Text(stringResource(R.string.sakura_ready_title)) },
-            text = { androidx.compose.foundation.lazy.LazyColumn { item { androidx.compose.material3.Text(patcherViewModel.readySummary) } } },
+            text = { androidx.compose.foundation.lazy.LazyColumn { item {
+                Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                    AppIcon(packageName = patcherViewModel.packageName, contentDescription = null,
+                        modifier = Modifier.size(48.dp))
+                    androidx.compose.material3.Text(patcherViewModel.readySummary)
+                }
+            } } },
             confirmButton = {
                 androidx.compose.material3.TextButton(onClick = { patcherViewModel.startReviewedBuild(false) }) { androidx.compose.material3.Text(stringResource(R.string.sakura_build_action)) }
             },

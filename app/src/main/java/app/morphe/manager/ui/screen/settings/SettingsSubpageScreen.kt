@@ -5,6 +5,7 @@
 
 package app.morphe.manager.ui.screen.settings
 
+import app.morphe.manager.R
 import androidx.activity.ComponentActivity
 import app.morphe.manager.ui.screen.settings.advanced.SakuraBuildWorkspaceScreen
 import androidx.activity.compose.LocalActivity
@@ -46,7 +47,8 @@ fun SettingsSubpageScreen(
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
             TextButton(onClick = onBack) { Text(stringResource(R.string.sakura_ui_back_to_settings)) }
             Box(Modifier.weight(1f)) {
-                if (subpage == SettingsSubpage.PROFILES || subpage == SettingsSubpage.BUILD_WORKSPACE) SakuraProfilesScreen()
+                if (subpage == SettingsSubpage.BUILD_WORKSPACE) SakuraBuildWorkspaceScreen(navigation.startBuild)
+                else if (subpage == SettingsSubpage.PROFILES) SakuraProfilesScreen()
                 else SakuraPatchLabScreen()
             }
         }

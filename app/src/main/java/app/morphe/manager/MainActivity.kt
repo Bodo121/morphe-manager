@@ -71,6 +71,7 @@ import app.morphe.manager.ui.screen.shared.MainPage
 import app.morphe.manager.ui.screen.shared.MessageHost
 import app.morphe.manager.ui.screen.shared.RandomBackground
 import app.morphe.manager.ui.screen.shared.UserMessages
+import app.morphe.manager.ui.screen.shared.rememberReducedMotion
 import app.morphe.manager.ui.screen.shared.rememberRandomBackground
 import app.morphe.manager.ui.screen.shared.sharedAxisZEnter
 import app.morphe.manager.ui.screen.shared.sharedAxisZExit

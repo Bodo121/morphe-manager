@@ -32,6 +32,8 @@ import app.morphe.manager.ui.theme.SakuraMono
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.morphe.manager.domain.manager.PreferencesManager
 import app.morphe.manager.domain.repository.PatchBundleRepository
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -82,7 +84,7 @@ private data class SakuraPatchCheck(
 
 /** Inspects a local APK; never executes its code or sends it to a server. */
 @Suppress("DEPRECATION")
-private fun inspectSakuraApk(context: Context, uri: Uri): SakuraApkScan {
+private suspend fun inspectSakuraApk(context: Context, uri: Uri): SakuraApkScan {
     val fileName = context.contentResolver.query(
         uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null
     )?.use { cursor ->
@@ -100,6 +102,7 @@ private fun inspectSakuraApk(context: Context, uri: Uri): SakuraApkScan {
             tmp.outputStream().buffered().use { output ->
                 val buffer = ByteArray(64 * 1024)
                 while (true) {
+                    kotlinx.coroutines.currentCoroutineContext().ensureActive()
                     val read = input.read(buffer)
                     if (read < 0) break
                     bytes += read
@@ -127,6 +130,7 @@ private fun inspectSakuraApk(context: Context, uri: Uri): SakuraApkScan {
         ZipFile(tmp).use { zip ->
             val entries = zip.entries()
             while (entries.hasMoreElements()) {
+                kotlinx.coroutines.currentCoroutineContext().ensureActive()
                 val entry = entries.nextElement()
                 count++
                 if (files.size < 20000) files[entry.name] = entry.crc to entry.size
@@ -134,7 +138,17 @@ private fun inspectSakuraApk(context: Context, uri: Uri): SakuraApkScan {
                     dex++
                     if (methods.size < 50000 && entry.size in 112..(64L * 1024 * 1024)) {
                         runCatching {
-                            val data = zip.getInputStream(entry).use { it.readBytes() }
+                            val data = zip.getInputStream(entry).use { input ->
+                                val out = java.io.ByteArrayOutputStream()
+                                val block = ByteArray(65536)
+                                while (true) {
+                                    kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                                    val n = input.read(block); if (n < 0) break
+                                    require(out.size().toLong() + n <= 64L * 1024 * 1024) { "DEX exceeds inspection limit" }
+                                    out.write(block, 0, n)
+                                }
+                                out.toByteArray()
+                            }
                             methods.putAll(DexMethodIndex.read(data, 50000 - methods.size))
                         }.onFailure { notes += "Method inspection incomplete for ${entry.name}: ${it.message}" }
                     } else notes += "Method inspection limited for ${entry.name}"
@@ -230,6 +244,7 @@ fun SakuraPatchLabScreen(
                     primary = result
                     comparison = null
                 }
+            } catch (e: CancellationException) { throw e
             } catch (e: Exception) {
                 error = e.message ?: "APK inspection failed"
             } finally {

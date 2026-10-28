@@ -27,6 +27,7 @@ fun SakuraPatcherLanding(
     onOpenPatchLab: () -> Unit,
     onOpenSources: () -> Unit,
     onOpenSelections: () -> Unit,
+    onOpenWorkspace: () -> Unit,
     onStartBatch: () -> Unit
 ) {
     Column(
@@ -98,6 +99,7 @@ fun SakuraPatcherLanding(
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     TextButton(onClick = onOpenSources) { Text("Patch sources") }
+                    TextButton(onClick = onOpenWorkspace) { Text("Build workspace") }
                     TextButton(onClick = onOpenSelections) { Text("Saved selections") }
                 }
             }
