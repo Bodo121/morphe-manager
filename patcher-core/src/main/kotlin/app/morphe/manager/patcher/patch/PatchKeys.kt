@@ -22,8 +22,8 @@ fun Patch<*>.compatibilityKey() =
  * patcher has to resolve a selection to the very patch the user picked, so the app keys what it
  * shows the same way.
  */
-fun Collection<Patch<*>>.keyedFor(packageName: String): Map<String, Patch<*>> {
-    val relevant = filter { it.compatibleWith(packageName) }
+fun Collection<Patch<*>>.keyedFor(packageName: String, allowAllPackages: Boolean = false): Map<String, Patch<*>> {
+    val relevant = if (allowAllPackages) toList() else filter { it.compatibleWith(packageName) }
     return uniqueKeys(relevant, { it.name.orEmpty() }, { it.compatibilityKey() })
         .zip(relevant)
         .toMap()
