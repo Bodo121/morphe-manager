@@ -20,6 +20,7 @@ import kotlinx.serialization.json.JsonElement
 @Serializable
 data class PatchRequest(
     val packageName: String,
+    val compatibilityPackage: String = packageName,
     val inputFile: String,
     val outputFile: String,
     val mergedApkFile: String,
